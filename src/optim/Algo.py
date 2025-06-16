@@ -412,7 +412,7 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
                     track_models[client_idx].append([copy.deepcopy(m.data[0]).to("cpu") for m in client.trained_model.parameters()])
                     track_gradients[client_idx].append([lr * g[0].to("cpu") for g in aggregated_gradients])
 
-            print(f"Gradients computation time: {time.time() - grad_time} seconds")
+            # print(f"Gradients computation time: {time.time() - grad_time} seconds")
 
         perf_time = time.time()
 
@@ -548,7 +548,7 @@ def all_for_all_algo(network: Network, nb_of_synchronization: int = 5, pruning: 
                     client.scheduler
                 )
                 gradients.append(gradient)
-            print(f"Gradients computation time: {time.time() - grad_time} seconds")
+            # print(f"Gradients computation time: {time.time() - grad_time} seconds")
 
             # Update models using aggregated gradients (weighted combination)
             for client_idx in range(network.nb_clients):
@@ -697,7 +697,7 @@ def cobo_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool = 
                         [copy.deepcopy(m.data[0]).to("cpu") for m in client.trained_model.parameters()])
                     track_gradients[client_idx].append([lr * g[0].to("cpu") for g in aggregated_gradients])
 
-            print(f"Gradients computation time: {time.time() - grad_time} seconds")
+            # print(f"Gradients computation time: {time.time() - grad_time} seconds")
 
         perf_time = time.time()
 
@@ -844,7 +844,7 @@ def ditto_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool =
 def wga_bc_algo(network: Network, nb_of_synchronization: int = 5, beta: int = 10**-4, pruning: bool = False,
                 keep_track=False):
     """
-    Implementation of WGA-BC algorithm.
+    Implementation of Wga-bc algorithm.
 
     Parameters:
         network (Network): The federated network object containing all clients, models, and metadata.
@@ -943,7 +943,7 @@ def wga_bc_algo(network: Network, nb_of_synchronization: int = 5, beta: int = 10
                         [copy.deepcopy(m.data[0]).to("cpu") for m in client.trained_model.parameters()])
                     track_gradients[client_idx].append([lr * g[0].to("cpu") for g in grad_for_update])
 
-            print(f"Gradients computation time: {time.time() - grad_time} seconds")
+            # print(f"Gradients computation time: {time.time() - grad_time} seconds")
 
         perf_time = time.time()
 
@@ -1118,7 +1118,7 @@ def apfl_algo(network: Network, nb_of_synchronization: int = 5, keep_track: bool
 # \alpha = N / (N + 1 + v^2 n_0^2 / \sigma^2)
 #
 
-# A coder : https://arxiv.org/pdf/2003.13461 (APFL)
+# A coder : https://arxiv.org/pdf/2003.13461 (Apfl)
 
 # conseil de l'écostysème du FL.
 # pas de recherche, pas de publication.
@@ -1127,4 +1127,4 @@ def apfl_algo(network: Network, nb_of_synchronization: int = 5, keep_track: bool
 # norm grad Ri/ norm grad Rk * grad R_k
 
 
-# APFL :
+# Apfl :
