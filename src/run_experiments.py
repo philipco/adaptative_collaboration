@@ -39,7 +39,7 @@ if __name__ == '__main__':
     if "synth" in dataset_name:
         torch.set_default_dtype(torch.float64)
 
-    all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "WGA-BC", "APFL"]
+    all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
     all_seeds = [127, 496, 1729] # Mersenne number, Perfect number, Ramanujan number
 
     def dict(all_algos, all_seeds):
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     for algo_name in all_algos:
 
         assert algo_name in ["All-for-one-bin", "All-for-one-cont", "All-for-all", "Local", "FedAvg", "FedNova",
-                             "Cobo", "Ditto", "WGA-BC", "APFL"], "Algorithm not recognized."
+                             "Cobo", "Ditto", "Wga-bc", "Apfl"], "Algorithm not recognized."
         print(f"--- ================== ALGO: {algo_name} ================== ---")
 
         for seed in all_seeds:
@@ -74,9 +74,9 @@ if __name__ == '__main__':
                 cobo_algo(network, nb_of_synchronization=nb_epochs)
             elif algo_name == "Ditto":
                 ditto_algo(network, nb_of_synchronization=nb_epochs)
-            elif algo_name == "WGA-BC":
+            elif algo_name == "Wga-bc":
                 wga_bc_algo(network, nb_of_synchronization=nb_epochs)
-            elif algo_name == "APFL":
+            elif algo_name == "Apfl":
                 apfl_algo(network, nb_of_synchronization=nb_epochs)
 
             for client in network.clients:

@@ -114,8 +114,8 @@ def generate_client_models(N: int, K: int, d: int, cluster_variance: float = 2):
     """
     # Generate K cluster centers
     # Create an uninitialized tensor and fill it with values from the uniform distribution
-    # cluster_centers = [torch.DoubleTensor([5, 5]), -torch.DoubleTensor([5, 5])] #
-    cluster_centers = [torch.empty(d).uniform_(-5, 5) for _ in range(K)]
+    # cluster_centers = [torch.DoubleTensor([10, 10]), -torch.DoubleTensor([5, 5])] #
+    cluster_centers = [torch.empty(d).uniform_(-10, 10) for _ in range(K)]
     # Assign each client to a cluster and generate their model
     variations = [cluster_variance * torch.randn(d) for i in range(N)]
     return [cluster_centers[i % K] + variations[i] for i in range(N)], variations
@@ -137,7 +137,7 @@ def get_synth_data(batch_size: int, nb_clients = 4, nb_clusters = 1, dim: int = 
             - test_loaders: List of DataLoaders for test data.
             - natural_split: Boolean indicating if the data split is natural.
         """
-    true_models, variations = generate_client_models(nb_clients, nb_clusters, dim, cluster_variance=0.1)
+    true_models, variations = generate_client_models(nb_clients, nb_clusters, dim, cluster_variance=0.01)
     datasets = [SyntheticLSRDataset(m, v, batch_size) for (m, v) in zip(true_models, variations)]
 
     train_loaders = [DataLoader(d, batch_size=None) for d in datasets]

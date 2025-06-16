@@ -19,7 +19,7 @@ from src.utils.Utilities import get_project_root, create_folder_if_not_existing
 COLORS = ['tab:blue', 'tab:red', 'tab:orange', 'tab:brown', 'tab:green', 'tab:purple', 'tab:cyan', 'tab:pink',
           'tab:grey']
 MARKERS = ['o', 's', 'D', '^', 'v', '<']
-FONTSIZE = 25
+FONTSIZE = 20
 
 def plot_values(epochs, values, legends, metric_name, dataset_name, log=False):
     """
@@ -33,7 +33,7 @@ def plot_values(epochs, values, legends, metric_name, dataset_name, log=False):
         dataset_name (str): Dataset used (used to determine save path and legend position).
         log (bool): If True, apply log10 transform to the values before averaging and plotting.
     """
-    plt.figure(figsize=(9, 6))
+    plt.figure(figsize=(9, 7))
     i = 0
 
     # Plot each algorithm's mean and std across runs
@@ -63,14 +63,14 @@ def plot_values(epochs, values, legends, metric_name, dataset_name, log=False):
 
     # Heuristic for legend placement depending on dataset and metric
     if (metric_name == "log(Test loss)" and dataset_name == "mnist"):
-        loc = "upper right"
+        loc = "lower left"
     elif (metric_name == "Test accuracy" and dataset_name == "mnist"):
         loc = "lower right"
     else:
         loc = "lower left"
 
-    # if dataset_name in ["mnist", "synth"]:
-    plt.legend(fontsize=FONTSIZE, loc=loc)
+    if dataset_name in ["mnist", "synth"]:
+        plt.legend(fontsize=FONTSIZE, loc=loc, ncol=2)
 
     # Save figure to disk
     root = get_project_root()
