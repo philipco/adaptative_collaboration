@@ -8,7 +8,7 @@ from src.utils.Utilities import get_project_root
 
 if __name__ == '__main__':
 
-    dataset_name = "synth"
+    dataset_name = "heart_disease"
 
     assert dataset_name in ["exam_llm", "mnist", "mnist_iid", "cifar10", "cifar10_iid", "heart_disease", "tcga_brca", "ixi", "liquid_asset",
                             "synth", "synth_complex"], "Dataset not recognized."
@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     nb_initial_epochs = 0
 
-    all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Cobo", "Ditto", "WGA-BC", "APFL"]
+    all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Cobo", "Ditto", "Wga-bc", "Apfl"]
     all_seeds = [127, 496, 1729] # Mersenne number, Perfect number, Ramanujan number
 
     def dict(all_algos, all_seeds):
@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     for algo_name in all_algos:
         assert algo_name in ["All-for-one-bin", "All-for-one-cont", "All-for-all", "Local", "FedAvg", "FedNova",
-                             "Ditto", "Cobo", "WGA-BC", "APFL"], \
+                             "Ditto", "Cobo", "Wga-bc", "Apfl"], \
             "Algorithm not recognized."
         print(f"--- ================== ALGO: {algo_name} ================== ---")
 
@@ -60,7 +60,7 @@ if __name__ == '__main__':
                 weights[algo_name][seed].append(writer.retrieve_histogram_information("weights")[1])
                 ratio[algo_name][seed].append(writer.retrieve_histogram_information("ratio")[1])
 
-            if algo_name not in ["FedAvg", "FedNova", "WGA-BC"]:
+            if algo_name not in ["FedAvg", "FedNova", "Wga-bc", "Apfl"]:
                 plot_weights(weights[algo_name][all_seeds[0]], dataset_name, algo_name)#, x_axis=test_accuracies[algo_name])
 
     plot_values(train_epochs, train_accuracies, all_algos, 'Train accuracy', dataset_name)

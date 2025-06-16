@@ -5,7 +5,7 @@ import torch
 from src.data.DatasetConstants import BATCH_SIZE
 from src.data.Network import get_network
 from src.optim.Algo import all_for_one_algo, all_for_all_algo, fedavg_training, fednova_training, cobo_algo, ditto_algo, \
-    wga_bc_algo, apfl_algo
+    wga_bc_algo, apfl_algo, local_training
 
 from src.utils.PlotUtilities import plot_values, plot_weights
 from src.utils.Utilities import get_project_root, create_folder_if_not_existing
@@ -42,13 +42,12 @@ def plot_level_set_with_gradients_pytorch(data_loader, x_range=(-10, 10), y_rang
 
 dataset_name = "synth"
 
-NB_RUN = 1
 NB_EPOCHS = 30
 
 if __name__ == '__main__':
 
     nb_initial_epochs = 0
-    all_algos = ["All-for-one-cont", "Local", "Cobo", "APFL"]
+    all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
     all_seeds = [127]
 
 
@@ -86,8 +85,8 @@ if __name__ == '__main__':
             track_models, track_gradients = all_for_all_algo(network, nb_of_synchronization=NB_EPOCHS,
                                                              collab_based_on="ratio", keep_track=True)
         if algo_name == "Local":
-            track_models, track_gradients = all_for_all_algo(network, nb_of_synchronization=NB_EPOCHS,
-                                                             collab_based_on="local", keep_track=True)
+            track_models, track_gradients = local_training(network, nb_of_synchronization=NB_EPOCHS,
+                                                           keep_track=True)
         if algo_name == "Fednova":
             fednova_training(network, nb_of_synchronization=NB_EPOCHS)
         if algo_name == "All-for-one-bin":
@@ -100,9 +99,9 @@ if __name__ == '__main__':
             track_models, track_gradients = cobo_algo(network, nb_of_synchronization=NB_EPOCHS, keep_track=True)
         elif algo_name == "Ditto":
             track_models, track_gradients = ditto_algo(network, nb_of_synchronization=NB_EPOCHS, keep_track=True)
-        elif algo_name == "WGA-BC":
+        elif algo_name == "Wga-bc":
             track_models, track_gradients = wga_bc_algo(network, nb_of_synchronization=NB_EPOCHS, keep_track=True)
-        elif algo_name == "APFL":
+        elif algo_name == "Apfl":
             track_models, track_gradients = apfl_algo(network, nb_of_synchronization=NB_EPOCHS, keep_track=True)
 
         if not algo_name in ["FedAvg", "Fednova"]:

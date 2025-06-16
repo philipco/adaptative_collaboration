@@ -10,7 +10,7 @@ from src.data.LiquidAssetDataset import do_prediction_liquid_asset, load_liquid_
 from src.data.DatasetConstants import NB_EPOCHS
 from src.data.Network import get_network
 from src.optim.Algo import fedavg_training, all_for_all_algo, all_for_one_algo, fednova_training, cobo_algo, ditto_algo, \
-    wga_bc_algo, apfl_algo
+    wga_bc_algo, apfl_algo, local_training
 from src.utils.PlotUtilities import plot_values, plot_weights
 from src.utils.Utilities import get_path_to_datasets
 
@@ -63,7 +63,7 @@ if __name__ == '__main__':
             elif algo_name == "All-for-all":
                 all_for_all_algo(network, nb_of_synchronization=nb_epochs, collab_based_on="ratio")
             elif algo_name == "Local":
-                all_for_all_algo(network, nb_of_synchronization=nb_epochs, collab_based_on="local")
+                local_training(network, nb_of_synchronization=nb_epochs)
             elif algo_name == "FedNova":
                 fednova_training(network, nb_of_synchronization=nb_epochs)
             elif algo_name == "All-for-one-bin":
