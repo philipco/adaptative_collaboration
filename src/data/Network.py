@@ -83,7 +83,7 @@ class Network:
         for i in range(self.nb_clients):
             ID = f"{dataset_name}_{algo_name}_{initial_seed}_{i}" if split_type is None \
                 else f"{dataset_name}_{split_type}_{algo_name}_{initial_seed}_{i}"
-            if "synth" == dataset_name:
+            if dataset_name in ["synth", "synth_iid"]:
                 L = train_loaders[i].dataset.L
                 step_size = 1 / (2 * L)
             elif dataset_name == "synth_complex":
@@ -203,6 +203,10 @@ def get_network(dataset_name: str, algo_name: str, initial_seed: int):
     elif dataset_name in ["liquid_asset"]:
         train_loaders, val_loaders, test_loaders, natural_split \
             = get_data_from_csv(dataset_name, BATCH_SIZE[dataset_name])
+    elif dataset_name in ["synth_iid"]:
+        train_loaders, val_loaders, test_loaders, natural_split \
+            = get_synth_data(BATCH_SIZE[dataset_name], nb_clients=NB_CLIENTS[dataset_name], nb_clusters=1,
+                             cluster_variance=0)
     elif dataset_name in ["synth"]:
         train_loaders, val_loaders, test_loaders, natural_split \
             = get_synth_data(BATCH_SIZE[dataset_name], nb_clients=NB_CLIENTS[dataset_name], nb_clusters=2)

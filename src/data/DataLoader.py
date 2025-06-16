@@ -120,7 +120,7 @@ def generate_client_models(N: int, K: int, d: int, cluster_variance: float = 2):
     variations = [cluster_variance * torch.randn(d) for i in range(N)]
     return [cluster_centers[i % K] + variations[i] for i in range(N)], variations
 
-def get_synth_data(batch_size: int, nb_clients = 4, nb_clusters = 1, dim: int = 2) -> tuple[
+def get_synth_data(batch_size: int, nb_clients = 4, nb_clusters = 1, dim: int = 2, cluster_variance: float = 0.01) -> tuple[
     list[DataLoader[Any]], list[DataLoader[Any]], list[DataLoader[Any]], bool]:
     """Generate synthetic data (LSR) for federated learning experiments.
 
@@ -129,6 +129,7 @@ def get_synth_data(batch_size: int, nb_clients = 4, nb_clusters = 1, dim: int = 
         nb_clients (int, optional): Number of clients. Defaults to 4.
         nb_clusters (int, optional): Number of clusters. Defaults to 1.
         dim (int, optional): Dimensionality of the data. Defaults to 2.
+        cluster_variance (float, optional): Variance of optimal models inside a cluster. Defaults to 0.01/
 
     Returns:
         Tuple[List[DataLoader], List[DataLoader], List[DataLoader], bool]:
@@ -137,7 +138,7 @@ def get_synth_data(batch_size: int, nb_clients = 4, nb_clusters = 1, dim: int = 
             - test_loaders: List of DataLoaders for test data.
             - natural_split: Boolean indicating if the data split is natural.
         """
-    true_models, variations = generate_client_models(nb_clients, nb_clusters, dim, cluster_variance=0.01)
+    true_models, variations = generate_client_models(nb_clients, nb_clusters, dim, cluster_variance=cluster_variance)
     datasets = [SyntheticLSRDataset(m, v, batch_size) for (m, v) in zip(true_models, variations)]
 
     train_loaders = [DataLoader(d, batch_size=None) for d in datasets]
