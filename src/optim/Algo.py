@@ -54,19 +54,6 @@ def loss_accuracy_central_server(network: Network, weights, writer, epoch):
     writer.add_scalar('train_loss', epoch_train_loss, epoch)
     writer.add_scalar('train_accuracy', epoch_train_accuracy, epoch)
 
-    # On the validation set.
-    epoch_val_loss, epoch_val_accuracy = 0, 0
-    for i in range(network.nb_clients):
-        client = network.clients[i]
-        # WARNING : For tcga_brca, we need to evaluate the metric on the full dataset.
-        loss, acc = compute_loss_and_accuracy(client.trained_model, client.device, client.val_loader,
-                                              client.criterion, client.metric, True)
-        epoch_val_loss += loss * weights[i]
-        epoch_val_accuracy += acc * weights[i]
-
-    writer.add_scalar('val_loss', epoch_val_loss, epoch)
-    writer.add_scalar('val_accuracy', epoch_val_accuracy, epoch)
-
     # On the test set.
     epoch_test_loss, epoch_test_accuracy = 0, 0
     for i in range(network.nb_clients):
@@ -395,15 +382,18 @@ def compute_weight_based_on_ratio(gradients, nb_points_by_clients, client_idx, n
     denominators[client_idx].append(new_denom.item())
 
     for _ in range(len(gradients)):
-        # print(f"Local gradients: {grads[client_idx]} \t remote gradient: {grads[_]}")
-        new_num = torch.linalg.vector_norm(grads[client_idx] - grads[_])**2
+        new_num = torch.linalg.vector_norm(grads[client_idx] - grads[_]) ** 2
         numerators[client_idx][_].append(new_num.item())
-        # print(f"Scalar product: {torch.dot(grads[client_idx], grads[_])}")
-        # print(f"Local norm: {denominators[client_idx][-1]}")
-        # print(f"Distance: {grads[client_idx] - grads[_]}")
-        # print(f"Distance norm: {torch.linalg.vector_norm(grads[client_idx] - grads[_])**2}")
-        # print(f"Ratio: {1 - torch.linalg.vector_norm(grads[client_idx] - grads[_])**2 / denominators[client_idx][-1]}")
-
+        print(f"Scalar product: {torch.dot(grads[client_idx], grads[_])}")
+        print(f"Local norm: {denominators[client_idx][-1]}")
+        print(f"Distance: {grads[client_idx] - grads[_]}")
+        print(f"Squared distance norm: {torch.linalg.vector_norm(grads[client_idx] - grads[_]) ** 2}")
+        print(f"Distance norm: {torch.linalg.vector_norm(grads[client_idx] - grads[_])}")
+        print(
+            f"Ratio: {1 - torch.linalg.vector_norm(grads[client_idx] - grads[_]) ** 2 / denominators[client_idx][-1]}")
+        print(
+            f"Old ratio: {1 - torch.linalg.vector_norm(grads[client_idx] - grads[_]) / denominators[client_idx][-1]}")
+        print("\n\n")
     if continuous:
         weight = [ratio(numerators[client_idx][_][-1], denominators[client_idx][-1]) for _ in range(len(gradients))]
     else:
@@ -463,6 +453,7 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
 
     # Create an iterator over each client's training data for each model being evaluated.
     iter_loaders = [[iter(c.train_loader) for c in network.clients] for client in network.clients]
+    iter_loaders_weights = [[iter(c.val_loader) for c in network.clients] for client in network.clients]
 
     for synchronization_idx in range(1, nb_of_synchronization + 1):
         print(f"===============\tEpoch {synchronization_idx}\t===============")
@@ -478,8 +469,8 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
             # Evaluate gradients of client's model on each other client's data.
             for c_idx in range(network.nb_clients):
                 c = network.clients[c_idx]
-                gradient_eval, iter_loaders[client_idx][c_idx] = safe_gradient_computation(
-                    c.train_loader, iter_loaders[client_idx][c_idx], c.device,
+                gradient_eval, iter_loaders_weights[client_idx][c_idx] = safe_gradient_computation(
+                    c.val_loader, iter_loaders_weights[client_idx][c_idx], c.device,
                     client.trained_model, client.criterion, client.optimizer, client.scheduler
                 )
                 gradients_eval[c_idx] = gradient_eval
@@ -501,7 +492,6 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
         for k in range(inner_iterations):
 
             # Compute the new model client by client.
-            grad_time = time.time()
 
             for client_idx in range(network.nb_clients):
                 client = network.clients[client_idx]
@@ -530,6 +520,7 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
             # print(f"Gradients computation time: {time.time() - grad_time} seconds")
 
         perf_time = time.time()
+        print(f"Performance time: {time.time() - perf_time} seconds")
 
         # Evaluate clients' performance and update learning rates.
         for i in range(network.nb_clients):
@@ -543,7 +534,6 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
         # Evaluate performance on the central server.
         loss_accuracy_central_server(network, fed_weights, network.writer, client.last_epoch)
 
-        print(f"Performance time: {time.time() - perf_time} seconds")
 
         network.save()
         print("Step-size:", client.optimizer.param_groups[0]['lr'])

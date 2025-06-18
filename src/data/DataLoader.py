@@ -192,12 +192,12 @@ def get_data_from_pytorch(dataset_name: str, fed_dataset, nb_of_clients, split_t
     X_train, X_val, X_test, Y_train, Y_val, Y_test = [], [], [], [], [], []
     for (x,y) in zip(X, Y):
         x2, x_test, y2, y_test = train_test_split(x, y, test_size=0.2, random_state=2024)
-        x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.1, random_state=2024)
-        X_train.append(x_train)
-        X_val.append(x_val)
+        # x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.1, random_state=2024)
+        X_train.append(x2)
+        # X_val.append(x_val)
         X_test.append(x_test)
-        Y_train.append(y_train)
-        Y_val.append(y_val)
+        Y_train.append(y2)
+        # Y_val.append(y_val)
         Y_test.append(y_test)
 
     print_mem_usage()
@@ -210,8 +210,9 @@ def get_data_from_pytorch(dataset_name: str, fed_dataset, nb_of_clients, split_t
     print_mem_usage()
 
     train_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
-    val_loaders = [DataLoader(TensorDataset(X_val[i], Y_val[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
     test_loaders = [DataLoader(TensorDataset(X_test[i], Y_test[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
+    kwargs_dataloader["batch_size"] = 512
+    val_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
 
     natural_split = False
     return train_loaders, val_loaders, test_loaders, natural_split

@@ -180,7 +180,7 @@ def get_network(dataset_name: str, algo_name: str, initial_seed: int):
 
     ### We the dataset naturally splitted or not.
     if dataset_name in ["mnist", "cifar10"]:
-        split_type = "dirichlet"
+        split_type = "partition"
         train_loaders, val_loaders, test_loaders, natural_split \
             = get_data_from_pytorch(dataset_name, DATASET[dataset_name], NB_CLIENTS[dataset_name], split_type,
                                     kwargs_train_dataset=dict(root=get_path_to_datasets(), download=True,

@@ -5,10 +5,17 @@ from src.utils.LoggingWriter import LoggingWriter
 from src.utils.PlotUtilities import plot_values, plot_weights
 from src.utils.Utilities import get_project_root
 
+def extract_number(chaine):
+    # Diviser la chaîne par '_' et prendre le dernier élément avant l'extension
+    dernier_partie = chaine.split('_')[-1]
+    # Enlever l'extension .pkl et convertir en entier
+    nombre = int(dernier_partie.split('.')[0])
+    return nombre
+
 
 if __name__ == '__main__':
 
-    dataset_name = "heart_disease"
+    dataset_name = "mnist"
 
     assert dataset_name in ["exam_llm", "mnist", "mnist_iid", "cifar10", "cifar10_iid", "heart_disease", "tcga_brca", "ixi", "liquid_asset",
                             "synth", "synth_complex"], "Dataset not recognized."
@@ -46,12 +53,11 @@ if __name__ == '__main__':
             matching_files = glob.glob(file_pattern)
 
             # Extract the file names from the full paths
-            file_names = sorted([os.path.basename(file) for file in matching_files])
+            file_names = sorted([os.path.basename(file) for file in matching_files
+                                 if os.path.basename(file) != "logging_writer_central.pkl"], key=extract_number)
             if len(file_names) == 0:
                 raise ValueError(f"There is no corresponding files in {pickle_folder}")
             for name in file_names:
-                if name == 'logging_writer_central.pkl':
-                    continue
 
                 writer = LoggingWriter.load(pickle_folder, name)
 
