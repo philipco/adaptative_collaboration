@@ -88,7 +88,7 @@ class Network:
                 step_size = 1 / (2 * L)
             elif dataset_name == "synth_complex":
                 L = train_loaders[i].dataset.L
-                step_size = 1 / (8 * L)
+                step_size = 1 / (4 * L)
             self.clients.append(Client(
                 ID, f"{dataset_name}", algo_name, initial_seed, train_loaders[i], val_loaders[i],
                 test_loaders[i], net,
@@ -97,8 +97,8 @@ class Network:
                 SCHEDULER_PARAMS[dataset_name]
             ))
 
-        ID = f"{dataset_name}_{algo_name}_{initial_seed}_central_server" if split_type is None \
-            else f"{dataset_name}_{split_type}_{algo_name}_{initial_seed}_central_server"
+        ID = f"{dataset_name}_{algo_name}_{self.nb_clients}_{initial_seed}_central_server" if split_type is None \
+            else f"{dataset_name}_{split_type}_{algo_name}_{self.nb_clients}_{initial_seed}_central_server"
         self.writer = LoggingWriter(
             log_dir=f'/home/cphilipp/GITHUB/heterogeneity_quantification/runs/{dataset_name}/{ID}'
         )
@@ -209,10 +209,10 @@ def get_network(dataset_name: str, algo_name: str, initial_seed: int):
                              cluster_variance=0)
     elif dataset_name in ["synth"]:
         train_loaders, val_loaders, test_loaders, natural_split \
-            = get_synth_data(BATCH_SIZE[dataset_name], nb_clients=NB_CLIENTS[dataset_name], nb_clusters=2)
+            = get_synth_data(BATCH_SIZE[dataset_name], nb_clients=NB_CLIENTS[dataset_name], nb_clusters=2, cluster_variance=0)
     elif dataset_name in ["synth_complex"]:
         train_loaders, val_loaders, test_loaders, natural_split \
-            = get_synth_data(BATCH_SIZE[dataset_name], nb_clients=NB_CLIENTS[dataset_name], nb_clusters=2, dim=10)
+            = get_synth_data(BATCH_SIZE[dataset_name], nb_clients=NB_CLIENTS[dataset_name], nb_clusters=2, cluster_variance=0, dim=10)
     else:
         train_loaders, val_loaders, test_loaders, natural_split \
             = get_data_from_flamby(DATASET[dataset_name], NB_CLIENTS[dataset_name], dataset_name, BATCH_SIZE[dataset_name],

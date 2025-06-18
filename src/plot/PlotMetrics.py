@@ -38,11 +38,17 @@ if __name__ == '__main__':
             pickle_folder = '{0}/pickle/{1}/{2}/{3}'.format(root, dataset_name, algo_name, seed)
 
             # Use glob to find all files matching the pattern
-            file_pattern = os.path.join(pickle_folder, 'logging_writer*.pkl')
+            if dataset_name in ["mnist", "cifar10"]:
+                split_type = "partition"
+                file_pattern = os.path.join(pickle_folder, f'logging_writer_*_{split_type}_*.pkl')
+            else:
+                file_pattern = os.path.join(pickle_folder, 'logging_writer*.pkl')
             matching_files = glob.glob(file_pattern)
 
             # Extract the file names from the full paths
             file_names = sorted([os.path.basename(file) for file in matching_files])
+            if len(file_names) == 0:
+                raise ValueError(f"There is no corresponding files in {pickle_folder}")
             for name in file_names:
                 if name == 'logging_writer_central.pkl':
                     continue

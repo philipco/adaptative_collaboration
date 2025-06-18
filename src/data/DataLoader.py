@@ -120,7 +120,7 @@ def generate_client_models(N: int, K: int, d: int, cluster_variance: float = 2):
     variations = [cluster_variance * torch.randn(d) for i in range(N)]
     return [cluster_centers[i % K] + variations[i] for i in range(N)], variations
 
-def get_synth_data(batch_size: int, nb_clients = 4, nb_clusters = 1, dim: int = 2, cluster_variance: float = 0.01) -> tuple[
+def get_synth_data(batch_size: int, nb_clients = 20, nb_clusters = 1, dim: int = 2, cluster_variance: float = 0.1) -> tuple[
     list[DataLoader[Any]], list[DataLoader[Any]], list[DataLoader[Any]], bool]:
     """Generate synthetic data (LSR) for federated learning experiments.
 
