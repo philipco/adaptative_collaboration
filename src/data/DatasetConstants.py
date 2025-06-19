@@ -115,13 +115,13 @@ WEIGHT_DECAY = {"mnist": 5*10**-4,
                 "synth_iid": 0,
                 "synth_complex": 0,
                 "exam_llm": 5*10**-4}
-BATCH_SIZE = {"mnist": 64,
+BATCH_SIZE = {"mnist": 4,
               "mnist_iid": 64,
-              "cifar10": 64,
+              "cifar10": 4,
               "cifar10_iid": 64,
               "tcga_brca": 8,
               "heart_disease": 1,
-              "ixi": 8,
+              "ixi": 4,
               "liquid_asset": 8,
               "synth": 2,
               "synth_iid": 2,
@@ -164,7 +164,7 @@ NB_EPOCHS = {"mnist": 50,
              "synth_complex": 200,
              "exam_llm": 4}
 
-
+INNER = 32
 
 
 

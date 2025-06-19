@@ -23,6 +23,7 @@ import optuna
 import torch
 from torch import optim
 
+from src.data.DatasetConstants import INNER
 from src.data.Network import Network
 from src.utils.UtilitiesPytorch import aggregate_models, equal, load_new_model, aggregate_gradients, \
     fednova_aggregation, scalar_multiplication
@@ -89,7 +90,7 @@ def fedavg_training(network: Network, nb_of_synchronization: int = 5, keep_track
     weights = [client.nb_train_points / total_nb_points for client in network.clients]
 
     try:
-        inner_iterations = int(np.mean([len(client.train_loader) for client in network.clients]))
+        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
     except TypeError:
         inner_iterations = 1
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
@@ -163,7 +164,7 @@ def local_training(network: Network, nb_of_synchronization: int = 5, pruning: bo
     """
     try:
         # Estimate number of local updates per synchronization based on average dataset size.
-        inner_iterations = int(np.mean([len(client.train_loader) for client in network.clients]))
+        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
     except TypeError:
         inner_iterations = 1
 
@@ -428,7 +429,7 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
     """
     try:
         # Estimate number of local updates per synchronization based on average dataset size.
-        inner_iterations = int(np.mean([len(client.train_loader) for client in network.clients]))
+        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
     except TypeError:
         inner_iterations = 1
 
@@ -573,7 +574,7 @@ def all_for_all_algo(network: Network, nb_of_synchronization: int = 5, pruning: 
 
     # Compute average number of local iterations per synchronization round
     try:
-        inner_iterations = int(np.mean([len(client.train_loader) for client in network.clients]))
+        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
     except TypeError:
         inner_iterations = 1
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
@@ -702,7 +703,7 @@ def cobo_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool = 
 
     # Compute average number of local iterations per synchronization round
     try:
-        inner_iterations = int(np.mean([len(client.train_loader) for client in network.clients]))
+        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
     except TypeError:
         inner_iterations = 1
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
@@ -844,7 +845,7 @@ def ditto_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool =
     fed_weights = [client.nb_train_points / total_nb_points for client in network.clients]
 
     try:
-        inner_iterations = int(np.mean([len(client.train_loader) for client in network.clients]))
+        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
     except TypeError:
         inner_iterations = 1
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
@@ -964,7 +965,7 @@ def wga_bc_algo(network: Network, nb_of_synchronization: int = 5, beta: int = 10
     """
     try:
         # Estimate number of local updates per synchronization based on average dataset size.
-        inner_iterations = int(np.mean([len(client.train_loader) for client in network.clients]))
+        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
     except TypeError:
         inner_iterations = 1
 
@@ -1102,7 +1103,7 @@ def apfl_algo(network: Network, nb_of_synchronization: int = 5, keep_track: bool
     weights = [client.nb_train_points / total_nb_points for client in network.clients]
 
     try:
-        inner_iterations = int(np.mean([len(client.train_loader) for client in network.clients]))
+        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
     except TypeError:
         inner_iterations = 1
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
