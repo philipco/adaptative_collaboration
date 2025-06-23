@@ -151,16 +151,21 @@ def cluster_split(features: np.ndarray, labels: np.ndarray, nb_clients: int) -> 
     client_features = []
     client_labels = []
 
+    mask = np.isin(labels, [0, 1, 2, 3, 4])
+
+
     for i in range(nb_clients):
-        if (i + 1) % 2 == 1:
+        if i % 2 == 1:
             # Odd clients: labels 1 to 4
-            mask = np.isin(labels, [0, 1, 2, 3, 4])
+            nb_points_by_clients = int(2 * len(labels[mask]) / nb_clients)
+            client_features.append(features[mask][nb_points_by_clients * (i // 2): nb_points_by_clients * (i // 2 + 1)])
+            client_labels.append(labels[mask][nb_points_by_clients * (i // 2): nb_points_by_clients * (i // 2 +1)])
+
         else:
             # Even clients: labels 5 to 9
-            mask = np.isin(labels, [5, 6, 7, 8, 9])
-
-        client_features.append(features[mask])
-        client_labels.append(labels[mask])
+            nb_points_by_clients = int(2 * len(labels[~mask]) / nb_clients)
+            client_features.append(features[~mask][nb_points_by_clients * (i // 2): nb_points_by_clients * (i // 2 + 1)])
+            client_labels.append(labels[~mask][nb_points_by_clients * (i // 2): nb_points_by_clients * (i // 2 + 1)])
 
     return client_features, client_labels
 
