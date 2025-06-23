@@ -139,7 +139,7 @@ MOMENTUM = {"mnist": 0.,
             "synth_iid": 0,
             "synth_complex":0,
             "exam_llm": 0.9}
-SCHEDULER_PARAMS = {"mnist": (10, 0.1),
+SCHEDULER_PARAMS = {"mnist": (20, 0.1),
                     "mnist_iid": (10, 0.1),
                     "cifar10": (10, 0.1),
                     "cifar10_iid": (10, 0.1),
@@ -164,7 +164,10 @@ NB_EPOCHS = {"mnist": 50,
              "synth_complex": 200,
              "exam_llm": 4}
 
-INNER = 32
+SPLIT = {"mnist": "cluster", "cifar10": "cluster"}
+
+INNER = 10
+VAL_BATCH_SIZE = 256
 
 
 

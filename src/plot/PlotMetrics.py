@@ -1,15 +1,16 @@
 import glob
 import os
 
+from src.data.DatasetConstants import SPLIT, NB_CLIENTS, BATCH_SIZE, STEP_SIZE, MOMENTUM
 from src.utils.LoggingWriter import LoggingWriter
 from src.utils.PlotUtilities import plot_values, plot_weights
 from src.utils.Utilities import get_project_root
 
 def extract_number(chaine):
     # Diviser la chaîne par '_' et prendre le dernier élément avant l'extension
-    dernier_partie = chaine.split('_')[-1]
+    dernier_partie = chaine.split('_')[2]
     # Enlever l'extension .pkl et convertir en entier
-    nombre = int(dernier_partie.split('.')[0])
+    nombre = int(dernier_partie)
     return nombre
 
 
@@ -46,10 +47,14 @@ if __name__ == '__main__':
 
             # Use glob to find all files matching the pattern
             if dataset_name in ["mnist", "cifar10"]:
-                split_type = "partition"
-                file_pattern = os.path.join(pickle_folder, f'logging_writer_*_{split_type}_*.pkl')
+                split_type = SPLIT[dataset_name]
+                file_pattern = os.path.join(pickle_folder, f'logging_writer_*_N{NB_CLIENTS[dataset_name]}_'
+                                                           f'b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_'
+                                                           f'm{MOMENTUM[dataset_name]}_{split_type}.pkl')
             else:
-                file_pattern = os.path.join(pickle_folder, 'logging_writer*.pkl')
+                file_pattern = os.path.join(pickle_folder, f'logging_writer_*_N{NB_CLIENTS[dataset_name]}_'
+                                                           f'b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_'
+                                                           f'm{MOMENTUM[dataset_name]}.pkl')
             matching_files = glob.glob(file_pattern)
 
             # Extract the file names from the full paths

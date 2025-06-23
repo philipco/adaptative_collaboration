@@ -6,7 +6,7 @@ from transformers import AutoModelForMultipleChoice
 from src.data.Client import Client
 from src.data.DatasetConstants import (
     CRITERION, MODELS, STEP_SIZE, METRIC, MOMENTUM, BATCH_SIZE,
-    SCHEDULER_PARAMS, WEIGHT_DECAY, CHECKPOINT
+    SCHEDULER_PARAMS, WEIGHT_DECAY, CHECKPOINT, SPLIT
 )
 from src.utils.LoggingWriter import LoggingWriter
 from src.utils.PickleHandler import pickle_loader
@@ -80,9 +80,12 @@ class Network:
         d = self.count_trainable_parameters(net)
         print(f"Number of trainable parameters: {d}.")
         step_size = STEP_SIZE[dataset_name]
+        if dataset_name in SPLIT.keys():
+            self.ID = f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}_{SPLIT[dataset_name]}"
+        else:
+            self.ID = f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}"
         for i in range(self.nb_clients):
-            ID = f"{dataset_name}_{algo_name}_{initial_seed}_{i}" if split_type is None \
-                else f"{dataset_name}_{split_type}_{algo_name}_{initial_seed}_{i}"
+            ID = f"{i}_{self.ID}"
             if dataset_name in ["synth", "synth_iid"]:
                 L = train_loaders[i].dataset.L
                 step_size = 1 / (2 * L)
@@ -180,7 +183,7 @@ def get_network(dataset_name: str, algo_name: str, initial_seed: int):
 
     ### We the dataset naturally splitted or not.
     if dataset_name in ["mnist", "cifar10"]:
-        split_type = "partition"
+        split_type = SPLIT[dataset_name]
         train_loaders, val_loaders, test_loaders, natural_split \
             = get_data_from_pytorch(dataset_name, DATASET[dataset_name], NB_CLIENTS[dataset_name], split_type,
                                     kwargs_train_dataset=dict(root=get_path_to_datasets(), download=True,

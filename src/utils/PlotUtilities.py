@@ -12,13 +12,13 @@ matplotlib.rcParams.update({
     'text.latex.preamble': r'\usepackage{amsfonts}'
 })
 
-from src.data.DatasetConstants import BATCH_SIZE, STEP_SIZE, MOMENTUM
+from src.data.DatasetConstants import BATCH_SIZE, STEP_SIZE, MOMENTUM, NB_CLIENTS, SPLIT
 from src.utils.Utilities import get_project_root, create_folder_if_not_existing
 
 # Default plotting styles
 COLORS = ['tab:blue', 'tab:red', 'tab:orange', 'tab:brown', 'tab:green', 'tab:purple', 'tab:cyan', 'tab:pink',
           'tab:grey']
-MARKERS = ['o', 's', 'D', '^', 'v', '<']
+MARKERS = ['o', 's', 'D', '^', 'v', '<', 'P', 'X']
 FONTSIZE = 20
 
 def plot_values(epochs, values, legends, metric_name, dataset_name, log=False):
@@ -50,6 +50,8 @@ def plot_values(epochs, values, legends, metric_name, dataset_name, log=False):
             avg_values_var = np.std(value_to_plot, axis=0)
 
         epochs_axis = np.linspace(0, len(avg_values)-1, len(avg_values))
+        # plt.plot(np.log10(epochs_axis), avg_values, linestyle='-', color=COLORS[i], label=algo_name, linewidth=5)
+        # plt.fill_between(np.log10(epochs_axis), avg_values - avg_values_var, avg_values + avg_values_var, alpha=0.2,
         plt.plot(epochs_axis, avg_values, linestyle='-', color=COLORS[i], label=algo_name, linewidth=5)
         plt.fill_between(epochs_axis, avg_values - avg_values_var, avg_values + avg_values_var, alpha=0.2,
                          color=COLORS[i])
@@ -76,8 +78,12 @@ def plot_values(epochs, values, legends, metric_name, dataset_name, log=False):
     root = get_project_root()
     folder = f'{root}/pictures/{dataset_name}'
     create_folder_if_not_existing(folder)
-    plt.savefig(f"{folder}/{metric_name}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}.pdf",
-                bbox_inches='tight', dpi=600)
+    if dataset_name in SPLIT.keys():
+        ID = f"{metric_name}_N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}_{SPLIT[dataset_name]}"
+    else:
+        ID = f"{metric_name}_N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}"
+
+    plt.savefig(f"{folder}/{ID}.pdf", bbox_inches='tight', dpi=600)
 
     # Print final metric value (e.g., accuracy or log-loss) in LaTeX tabular format for paper inclusion
     print("\\begin{tabular}{|c|c|}")
@@ -142,5 +148,9 @@ def plot_weights(weights, dataset_name, algo_name, name="weights", x_axis=None):
     root = get_project_root()
     folder = f'{root}/pictures/{dataset_name}'
     create_folder_if_not_existing(folder)
-    plt.savefig(f"{folder}/{algo_name}_{name}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}.pdf",
-                bbox_inches='tight', dpi=600)
+    if dataset_name in SPLIT.keys():
+        ID = f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}_{SPLIT[dataset_name]}"
+    else:
+        ID = f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}"
+
+    plt.savefig(f"{folder}/{algo_name}_{name}_{ID}.pdf", bbox_inches='tight', dpi=600)
