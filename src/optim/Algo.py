@@ -385,16 +385,11 @@ def compute_weight_based_on_ratio(gradients, nb_points_by_clients, client_idx, n
     for _ in range(len(gradients)):
         new_num = torch.linalg.vector_norm(grads[client_idx] - grads[_]) ** 2
         numerators[client_idx][_].append(new_num.item())
-        print(f"Scalar product: {torch.dot(grads[client_idx], grads[_])}")
-        print(f"Local norm: {denominators[client_idx][-1]}")
-        print(f"Distance: {grads[client_idx] - grads[_]}")
-        print(f"Squared distance norm: {torch.linalg.vector_norm(grads[client_idx] - grads[_]) ** 2}")
-        print(f"Distance norm: {torch.linalg.vector_norm(grads[client_idx] - grads[_])}")
         print(
             f"Ratio: {1 - torch.linalg.vector_norm(grads[client_idx] - grads[_]) ** 2 / denominators[client_idx][-1]}")
         print(
             f"Old ratio: {1 - torch.linalg.vector_norm(grads[client_idx] - grads[_]) / denominators[client_idx][-1]}")
-        print("\n\n")
+        print("\n")
     if continuous:
         weight = [ratio(numerators[client_idx][_][-1], denominators[client_idx][-1]) for _ in range(len(gradients))]
     else:
@@ -521,8 +516,6 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
             # print(f"Gradients computation time: {time.time() - grad_time} seconds")
 
         perf_time = time.time()
-        print(f"Performance time: {time.time() - perf_time} seconds")
-
         # Evaluate clients' performance and update learning rates.
         for i in range(network.nb_clients):
             client = network.clients[i]
@@ -534,7 +527,7 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
 
         # Evaluate performance on the central server.
         loss_accuracy_central_server(network, fed_weights, network.writer, client.last_epoch)
-
+        print(f"Performance time: {time.time() - perf_time} seconds")
 
         network.save()
         print("Step-size:", client.optimizer.param_groups[0]['lr'])
