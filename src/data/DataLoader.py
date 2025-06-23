@@ -16,9 +16,9 @@ from transformers import AutoTokenizer
 
 from src.data.DataCollatorForMultipleChoice import DataCollatorForMultipleChoice
 from src.data.LiquidAssetDataset import prepare_liquid_asset
-from src.data.DatasetConstants import CHECKPOINT
+from src.data.DatasetConstants import CHECKPOINT, INNER, VAL_BATCH_SIZE
 from src.data.Split import create_non_iid_split
-from src.data.SyntheticDataset import SyntheticLSRDataset
+from src.data.SyntheticDataset import SyntheticLSRDataset, BinarySynthetic
 from src.utils.Utilities import get_path_to_datasets, print_mem_usage
 
 
@@ -209,10 +209,19 @@ def get_data_from_pytorch(dataset_name: str, fed_dataset, nb_of_clients, split_t
 
     print_mem_usage()
 
-    train_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
-    test_loaders = [DataLoader(TensorDataset(X_test[i], Y_test[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
-    kwargs_dataloader["batch_size"] = 512
-    val_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
+    if split_type == "inverse":
+        train_loaders = [DataLoader(BinarySynthetic(X_train[i], Y_train[i], i), **kwargs_dataloader) for i in
+                         range(nb_of_clients)]
+        test_loaders = [DataLoader(BinarySynthetic(X_train[i], Y_train[i], i), **kwargs_dataloader) for i in
+                        range(nb_of_clients)]
+        kwargs_dataloader["batch_size"] = VAL_BATCH_SIZE
+        val_loaders = [DataLoader(BinarySynthetic(X_train[i], Y_train[i], i), **kwargs_dataloader) for i in
+                       range(nb_of_clients)]
+    else:
+        train_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
+        test_loaders = [DataLoader(TensorDataset(X_test[i], Y_test[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
+        kwargs_dataloader["batch_size"] = VAL_BATCH_SIZE
+        val_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
 
     natural_split = False
     return train_loaders, val_loaders, test_loaders, natural_split
