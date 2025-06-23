@@ -377,19 +377,25 @@ def compute_weight_based_on_ratio(gradients, nb_points_by_clients, client_idx, n
     """
     grads = []
     for _ in range(len(gradients)):
-        grads.append(torch.concat([p.flatten() for p in gradients[_] if p is not None]))
+        if gradients[_] is not None:
+            grads.append(torch.concat([p.flatten() for p in gradients[_] if p is not None]))
+        else:
+            grads.append(None)
 
     new_denom = grads[client_idx].T @ grads[client_idx]
     denominators[client_idx].append(new_denom.item())
 
     for _ in range(len(gradients)):
-        new_num = torch.linalg.vector_norm(grads[client_idx] - grads[_]) ** 2
-        numerators[client_idx][_].append(new_num.item())
-        print(
-            f"Ratio: {1 - torch.linalg.vector_norm(grads[client_idx] - grads[_]) ** 2 / denominators[client_idx][-1]}")
-        print(
-            f"Old ratio: {1 - torch.linalg.vector_norm(grads[client_idx] - grads[_]) / denominators[client_idx][-1]}")
-        print("\n")
+        if  grads[_] is None:
+            numerators[client_idx][_].append(numerators[client_idx][_][-1])
+        else:
+            new_num = torch.linalg.vector_norm(grads[client_idx] - grads[_]) ** 2
+            numerators[client_idx][_].append(new_num.item())
+            print(
+                f"Ratio: {1 - torch.linalg.vector_norm(grads[client_idx] - grads[_]) ** 2 / denominators[client_idx][-1]}")
+            print(
+                f"Old ratio: {1 - torch.linalg.vector_norm(grads[client_idx] - grads[_]) / denominators[client_idx][-1]}")
+            print("\n")
     if continuous:
         weight = [ratio(numerators[client_idx][_][-1], denominators[client_idx][-1]) for _ in range(len(gradients))]
     else:
@@ -465,11 +471,17 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
             # Evaluate gradients of client's model on each other client's data.
             for c_idx in range(network.nb_clients):
                 c = network.clients[c_idx]
-                gradient_eval, iter_loaders_weights[client_idx][c_idx] = safe_gradient_computation(
-                    c.val_loader, iter_loaders_weights[client_idx][c_idx], c.device,
-                    client.trained_model, client.criterion, client.optimizer, client.scheduler
-                )
-                gradients_eval[c_idx] = gradient_eval
+
+                early_stopping = 5
+                if (client.last_epoch > early_stopping
+                        and sum([ratio(numerators[client_idx][c_idx][-k], denominators[client_idx][-k]) for k in range(1, early_stopping + 1)]) == 0):
+                    gradients_eval[c_idx] = None
+                else:
+                    gradient_eval, iter_loaders_weights[client_idx][c_idx] = safe_gradient_computation(
+                        c.val_loader, iter_loaders_weights[client_idx][c_idx], c.device,
+                        client.trained_model, client.criterion, client.optimizer, client.scheduler
+                    )
+                    gradients_eval[c_idx] = gradient_eval
 
             # Compute weights based on these evaluated gradients.
             weight, numerators, denominators = compute_weight_based_on_ratio(
