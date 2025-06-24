@@ -9,8 +9,6 @@ from src.optim.nn.Nets import TcgaRegression, CNN_MNIST, HeartDiseaseRegression,
     Synth2ClientsRegression, Synth100ClientsRegression, LeNet
 from src.optim.nn.Unet import UNet
 
-PCA_NB_COMPONENTS = 16
-
 TRANSFORM_MNIST = torchvision.transforms.Compose([
         torchvision.transforms.ToTensor(),
         torchvision.transforms.Normalize((0.1307,), (0.3081,))
@@ -165,10 +163,3 @@ NB_EPOCHS = {"mnist": 100,
              "exam_llm": 4}
 
 SPLIT = {"mnist": "cluster", "cifar10": "cluster"}
-
-INNER = 10
-VAL_BATCH_SIZE = 256
-
-
-
-

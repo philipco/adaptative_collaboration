@@ -26,12 +26,26 @@ if __name__ == '__main__':
         help="Name of the dataset.",
         required=True,
     )
+    parser.add_argument(
+        "--inner_iterations",
+        type=int,
+        help="Number of inner iterations (if not provided, defaults is None i.e. will take lenghts of the dataset).",
+        required=False,
+    )
+    parser.add_argument(
+        "--batch_size_alignement",
+        type=int,
+        help="Number of inner iterations (if not provided, defaults is None i.e. will take lenghts of the dataset).",
+        required=False,
+    )
     args = parser.parse_args()
     dataset_name = args.dataset_name
+    inner_iterations = args.inner_iterations
+    batch_size_alignement = args.batch_size_alignement
 
     assert dataset_name in ["exam_llm", "mnist", "mnist_iid", "cifar10", "cifar10_iid", "heart_disease", "tcga_brca", "ixi", "liquid_asset",
                             "synth", "synth_complex"], "Dataset not recognized."
-    print(f"### ================== DATASET: {dataset_name} ================== ###")
+    print(f"### ================== DATASET: {dataset_name} - inner iterations: {inner_iterations} ================== ###")
 
     nb_epochs = NB_EPOCHS[dataset_name]
 
@@ -39,8 +53,8 @@ if __name__ == '__main__':
     if "synth" in dataset_name:
         torch.set_default_dtype(torch.float64)
 
-    all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
-    all_seeds = [127, 496, 1729] # Mersenne number, Perfect number, Ramanujan number
+    all_algos = ["All-for-one-cont", "Local", "FedAvg", "Apfl"]
+    all_seeds = [127] # Mersenne number, Perfect number, Ramanujan number
 
     def dict(all_algos, all_seeds):
         return {algo: {s: [] for s in all_seeds} for algo in all_algos}
@@ -56,7 +70,8 @@ if __name__ == '__main__':
         print(f"--- ================== ALGO: {algo_name} ================== ---")
 
         for seed in all_seeds:
-            network = get_network(dataset_name, algo_name, seed)
+            network = get_network(dataset_name, algo_name, initial_seed=seed, inner_iterations=inner_iterations,
+                                  batch_size_alignement=batch_size_alignement)
 
             if algo_name == "FedAvg":
                 fedavg_training(network, nb_of_synchronization=nb_epochs)
@@ -93,14 +108,19 @@ if __name__ == '__main__':
                 weights[algo_name][seed].append(writer.retrieve_histogram_information("weights")[1])
                 ratio[algo_name][seed].append(writer.retrieve_histogram_information("ratio")[1])
 
-    plot_values(train_epochs, train_accuracies, all_algos, 'Train accuracy', dataset_name)
-    plot_values(train_epochs, train_losses, all_algos, 'log(Train loss)', dataset_name, log=True)
-    plot_values(test_epochs, test_accuracies, all_algos, 'Test accuracy', dataset_name)
-    plot_values(test_epochs, test_losses, all_algos, 'log(Test loss)', dataset_name, log=True)
+    plot_values(train_epochs, train_accuracies, all_algos, 'Train accuracy', dataset_name, inner_iterations,
+                batch_size_alignement)
+    plot_values(train_epochs, train_losses, all_algos, 'log(Train loss)', dataset_name, inner_iterations,
+                batch_size_alignement, log=True)
+    plot_values(test_epochs, test_accuracies, all_algos, 'Test accuracy', dataset_name, inner_iterations,
+                batch_size_alignement)
+    plot_values(test_epochs, test_losses, all_algos, 'log(Test loss)', dataset_name, inner_iterations,
+                batch_size_alignement, log=True)
 
     for algo_name in all_algos:
         if algo_name in ["All-for-one-bin", "All-for-one-cont", "All-for-all", "Cobo"]:
-            plot_weights(weights[algo_name][all_seeds[0]], dataset_name, algo_name)#, x_axis=test_accuracies[algo_name])
+            plot_weights(weights[algo_name][all_seeds[0]], dataset_name, algo_name, inner_iterations,
+                batch_size_alignement)#, x_axis=test_accuracies[algo_name])
 
     if dataset_name in ["liquid_asset"]:
         X_raw_train, X_raw_test, numerical_transformer = load_liquid_dataset_test(get_path_to_datasets())

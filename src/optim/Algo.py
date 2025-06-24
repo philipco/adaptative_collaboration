@@ -89,10 +89,9 @@ def fedavg_training(network: Network, nb_of_synchronization: int = 5, keep_track
     total_nb_points = np.sum([client.nb_train_points for client in network.clients])
     weights = [client.nb_train_points / total_nb_points for client in network.clients]
 
-    try:
-        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
-    except TypeError:
-        inner_iterations = 1
+    inner_iterations = network.inner_iterations if network.inner_iterations is not None else int(
+        np.mean([len(client.train_loader) for client in network.clients]))
+
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
 
     loss_accuracy_central_server(network, weights, network.writer, 0)
@@ -162,11 +161,8 @@ def local_training(network: Network, nb_of_synchronization: int = 5, pruning: bo
             - List of models tracked after each local step for each client.
             - List of gradients (scaled by learning rate) aggregated for each step and client.
     """
-    try:
-        # Estimate number of local updates per synchronization based on average dataset size.
-        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
-    except TypeError:
-        inner_iterations = 1
+    inner_iterations = network.inner_iterations if network.inner_iterations is not None else int(
+        np.mean([len(client.train_loader) for client in network.clients]))
 
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
 
@@ -428,11 +424,8 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
             - List of models tracked after each local step for each client.
             - List of gradients (scaled by learning rate) aggregated for each step and client.
     """
-    try:
-        # Estimate number of local updates per synchronization based on average dataset size.
-        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
-    except TypeError:
-        inner_iterations = 1
+    inner_iterations = network.inner_iterations if network.inner_iterations is not None else int(
+        np.mean([len(client.train_loader) for client in network.clients]))
 
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
 
@@ -578,10 +571,9 @@ def all_for_all_algo(network: Network, nb_of_synchronization: int = 5, pruning: 
     """
 
     # Compute average number of local iterations per synchronization round
-    try:
-        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
-    except TypeError:
-        inner_iterations = 1
+    inner_iterations = network.inner_iterations if network.inner_iterations is not None else int(
+        np.mean([len(client.train_loader) for client in network.clients]))
+
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
 
     # Compute normalized weights for weighted global evaluation
@@ -707,10 +699,9 @@ def cobo_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool = 
     """https://proceedings.neurips.cc/paper_files/paper/2024/file/1c32452f112719f7c1db6d983d060f78-Paper-Conference.pdf"""
 
     # Compute average number of local iterations per synchronization round
-    try:
-        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
-    except TypeError:
-        inner_iterations = 1
+    inner_iterations = network.inner_iterations if network.inner_iterations is not None else int(
+        np.mean([len(client.train_loader) for client in network.clients]))
+
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
 
     # Compute normalized weights for weighted global evaluation
@@ -849,10 +840,9 @@ def ditto_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool =
     total_nb_points = np.sum([client.nb_train_points for client in network.clients])
     fed_weights = [client.nb_train_points / total_nb_points for client in network.clients]
 
-    try:
-        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
-    except TypeError:
-        inner_iterations = 1
+    inner_iterations = network.inner_iterations if network.inner_iterations is not None else int(
+        np.mean([len(client.train_loader) for client in network.clients]))
+
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
 
     loss_accuracy_central_server(network, fed_weights, network.writer, 0)
@@ -968,11 +958,9 @@ def wga_bc_algo(network: Network, nb_of_synchronization: int = 5, beta: int = 10
             - List of models tracked after each local step for each client.
             - List of gradients (scaled by learning rate) aggregated for each step and client.
     """
-    try:
-        # Estimate number of local updates per synchronization based on average dataset size.
-        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
-    except TypeError:
-        inner_iterations = 1
+
+    inner_iterations = network.inner_iterations if network.inner_iterations is not None else int(
+        np.mean([len(client.train_loader) for client in network.clients]))
 
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
 
@@ -1107,10 +1095,9 @@ def apfl_algo(network: Network, nb_of_synchronization: int = 5, keep_track: bool
     total_nb_points = np.sum([client.nb_train_points for client in network.clients])
     weights = [client.nb_train_points / total_nb_points for client in network.clients]
 
-    try:
-        inner_iterations = INNER  #iint(np.mean([len(client.train_loader) for client in network.clients]))
-    except TypeError:
-        inner_iterations = 1
+    inner_iterations = network.inner_iterations if network.inner_iterations is not None else int(
+        np.mean([len(client.train_loader) for client in network.clients]))
+
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
 
     loss_accuracy_central_server(network, weights, network.writer, 0)

@@ -149,7 +149,7 @@ def get_synth_data(batch_size: int, nb_clients = 20, nb_clusters = 1, dim: int =
     return train_loaders, val_loaders, test_loaders, natural_split
 
 
-def get_data_from_pytorch(dataset_name: str, fed_dataset, nb_of_clients, split_type, kwargs_train_dataset, kwargs_test_dataset,
+def get_data_from_pytorch(dataset_name: str, fed_dataset, nb_of_clients, split_type, batch_size_alignement, kwargs_train_dataset, kwargs_test_dataset,
                           kwargs_dataloader) -> tuple[list[DataLoader[Any]], list[DataLoader[Any]], list[DataLoader[Any]], bool]:
     """Load and preprocess data from PyTorch datasets for federated learning.
 
@@ -214,20 +214,19 @@ def get_data_from_pytorch(dataset_name: str, fed_dataset, nb_of_clients, split_t
                          range(nb_of_clients)]
         test_loaders = [DataLoader(BinarySynthetic(X_train[i], Y_train[i], i), **kwargs_dataloader) for i in
                         range(nb_of_clients)]
-        kwargs_dataloader["batch_size"] = VAL_BATCH_SIZE
+        kwargs_dataloader["batch_size"] = batch_size_alignement
         val_loaders = [DataLoader(BinarySynthetic(X_train[i], Y_train[i], i), **kwargs_dataloader) for i in
                        range(nb_of_clients)]
     else:
         train_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
         test_loaders = [DataLoader(TensorDataset(X_test[i], Y_test[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
-        kwargs_dataloader["batch_size"] = VAL_BATCH_SIZE
+        kwargs_dataloader["batch_size"] = batch_size_alignement
         val_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
 
     natural_split = False
     return train_loaders, val_loaders, test_loaders, natural_split
 
-
-def get_data_from_flamby(fed_dataset, nb_of_clients, dataset_name: str, batch_size, kwargs_dataloader, debug: bool = False) \
+def get_data_from_flamby(dataset_name: str, fed_dataset, nb_of_clients, batch_size_alignement: int, kwargs_dataloader, debug: bool = False) \
         -> tuple[list[DataLoader[Any]], list[DataLoader[Any]], list[DataLoader[Any]], bool]:
     """Load and preprocess data from FLamby datasets for federated learning.
 
@@ -271,11 +270,11 @@ def get_data_from_flamby(fed_dataset, nb_of_clients, dataset_name: str, batch_si
         X_test.append(torch.concat([data_test]))
         Y_test.append(torch.concat([labels_test]))
 
-    train_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), batch_size=batch_size) for i in
+    train_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in
                      range(nb_of_clients)]
-    val_loaders = [DataLoader(TensorDataset(X_val[i], Y_val[i]), batch_size=batch_size) for i in range(nb_of_clients)]
-    test_loaders = [DataLoader(TensorDataset(X_test[i], Y_test[i]), batch_size=batch_size) for i in
-                    range(nb_of_clients)]
+    test_loaders = [DataLoader(TensorDataset(X_test[i], Y_test[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
+    kwargs_dataloader["batch_size"] = batch_size_alignement
+    val_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
 
     natural_split = True
     return train_loaders, val_loaders, test_loaders, natural_split

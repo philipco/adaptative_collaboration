@@ -1,7 +1,7 @@
 import glob
 import os
 
-from src.data.DatasetConstants import SPLIT, NB_CLIENTS, BATCH_SIZE, STEP_SIZE, MOMENTUM
+from src.data.DatasetConstants import SPLIT, NB_CLIENTS, BATCH_SIZE, STEP_SIZE, MOMENTUM, SCHEDULER_PARAMS
 from src.utils.LoggingWriter import LoggingWriter
 from src.utils.PlotUtilities import plot_values, plot_weights
 from src.utils.Utilities import get_project_root
@@ -17,6 +17,8 @@ def extract_number(chaine):
 if __name__ == '__main__':
 
     dataset_name = "mnist"
+    inner_iterations = None
+    batch_size_alignement = 512
 
     assert dataset_name in ["exam_llm", "mnist", "mnist_iid", "cifar10", "cifar10_iid", "heart_disease", "tcga_brca", "ixi", "liquid_asset",
                             "synth", "synth_complex"], "Dataset not recognized."
@@ -24,8 +26,8 @@ if __name__ == '__main__':
 
     nb_initial_epochs = 0
 
-    all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Cobo", "Ditto", "Wga-bc", "Apfl"]
-    all_seeds = [127, 496, 1729] # Mersenne number, Perfect number, Ramanujan number
+    all_algos = ["All-for-one-cont", "Local", "FedAvg", "Apfl"]
+    all_seeds = [127] # Mersenne number, Perfect number, Ramanujan number
 
     def dict(all_algos, all_seeds):
         return {algo: {s: [] for s in all_seeds} for algo in all_algos}
@@ -50,11 +52,13 @@ if __name__ == '__main__':
                 split_type = SPLIT[dataset_name]
                 file_pattern = os.path.join(pickle_folder, f'logging_writer_*_N{NB_CLIENTS[dataset_name]}_'
                                                            f'b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_'
-                                                           f'm{MOMENTUM[dataset_name]}_{split_type}.pkl')
+                                                           f's{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_'
+                                                           f'_inner{inner_iterations}_{split_type}.pkl')
             else:
                 file_pattern = os.path.join(pickle_folder, f'logging_writer_*_N{NB_CLIENTS[dataset_name]}_'
                                                            f'b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_'
-                                                           f'm{MOMENTUM[dataset_name]}.pkl')
+                                                           f's{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_'
+                                                           f'_inner{inner_iterations}.pkl')
             matching_files = glob.glob(file_pattern)
 
             # Extract the file names from the full paths
@@ -78,12 +82,17 @@ if __name__ == '__main__':
                 ratio[algo_name][seed].append(writer.retrieve_histogram_information("ratio")[1])
 
             if algo_name not in ["FedAvg", "FedNova", "Wga-bc", "Apfl"]:
-                plot_weights(weights[algo_name][all_seeds[0]], dataset_name, algo_name)#, x_axis=test_accuracies[algo_name])
+                plot_weights(weights[algo_name][all_seeds[0]], dataset_name, algo_name, inner_iterations,
+                             batch_size_alignement)#, x_axis=test_accuracies[algo_name])
 
-    plot_values(train_epochs, train_accuracies, all_algos, 'Train accuracy', dataset_name)
-    plot_values(train_epochs, train_losses, all_algos, 'log(Train loss)', dataset_name, log=True)
-    plot_values(test_epochs, test_accuracies, all_algos, 'Test accuracy', dataset_name)
-    plot_values(test_epochs, test_losses, all_algos, 'log(Test loss)', dataset_name, log=True)
+    plot_values(train_epochs, train_accuracies, all_algos, 'Train accuracy', dataset_name, inner_iterations,
+                batch_size_alignement)
+    plot_values(train_epochs, train_losses, all_algos, 'log(Train loss)', dataset_name, inner_iterations,
+                batch_size_alignement, log=True)
+    plot_values(test_epochs, test_accuracies, all_algos, 'Test accuracy', dataset_name, inner_iterations,
+                batch_size_alignement)
+    plot_values(test_epochs, test_losses, all_algos, 'log(Test loss)', dataset_name, inner_iterations,
+                batch_size_alignement, log=True)
 
 
 

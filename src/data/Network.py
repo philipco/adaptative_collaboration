@@ -6,7 +6,7 @@ from transformers import AutoModelForMultipleChoice
 from src.data.Client import Client
 from src.data.DatasetConstants import (
     CRITERION, MODELS, STEP_SIZE, METRIC, MOMENTUM, BATCH_SIZE,
-    SCHEDULER_PARAMS, WEIGHT_DECAY, CHECKPOINT, SPLIT
+    SCHEDULER_PARAMS, WEIGHT_DECAY, CHECKPOINT, SPLIT, INNER
 )
 from src.utils.LoggingWriter import LoggingWriter
 from src.utils.PickleHandler import pickle_loader
@@ -38,7 +38,7 @@ class Network:
     """
 
     def __init__(self, train_loaders, val_loaders, test_loaders, dataset_name,
-                 algo_name, split_type, initial_seed=0):
+                 algo_name, split_type, initial_seed: int, inner_iterations: int, batch_size_alignement: int):
         """
         Initialize the Network with data loaders and configuration parameters.
 
@@ -57,6 +57,8 @@ class Network:
         self.split_type = split_type
         self.algo_name = algo_name
         self.initial_seed = initial_seed
+        self.inner_iterations = 1 if "synth" in dataset_name else inner_iterations
+        self.batch_size_alignement = batch_size_alignement
 
         self.nb_clients = len(train_loaders)
         # The iterable dataset has no length (online setting, length is infinite).
@@ -81,9 +83,13 @@ class Network:
         print(f"Number of trainable parameters: {d}.")
         step_size = STEP_SIZE[dataset_name]
         if dataset_name in SPLIT.keys():
-            self.ID = f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}_{SPLIT[dataset_name]}"
+            self.ID = (f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
+                       f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{self.inner_iterations}_"
+                       f"bVal{self.batch_size_alignement}_{SPLIT[dataset_name]}")
         else:
-            self.ID = f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}"
+            self.ID = (f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
+                       f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{self.inner_iterations}_"
+                       f"bVal{self.batch_size_alignement}")
         for i in range(self.nb_clients):
             ID = f"{i}_{self.ID}"
             if dataset_name in ["synth", "synth_iid"]:
@@ -96,7 +102,7 @@ class Network:
                 ID, f"{dataset_name}", algo_name, initial_seed, train_loaders[i], val_loaders[i],
                 test_loaders[i], net,
                 CRITERION[dataset_name], METRIC[dataset_name], step_size,
-                MOMENTUM[dataset_name], WEIGHT_DECAY[dataset_name], BATCH_SIZE[dataset_name],
+                MOMENTUM[dataset_name], WEIGHT_DECAY[dataset_name],
                 SCHEDULER_PARAMS[dataset_name]
             ))
 
@@ -159,7 +165,7 @@ DATASET = {"mnist": torchvision.datasets.MNIST, "mnist_iid": torchvision.dataset
            }
 
 
-def get_network(dataset_name: str, algo_name: str, initial_seed: int):
+def get_network(dataset_name: str, algo_name: str, initial_seed: int, inner_iterations: int, batch_size_alignement: int):
     """
     Prepare data loaders according to the dataset and instantiate a Network.
 
@@ -186,6 +192,7 @@ def get_network(dataset_name: str, algo_name: str, initial_seed: int):
         split_type = SPLIT[dataset_name]
         train_loaders, val_loaders, test_loaders, natural_split \
             = get_data_from_pytorch(dataset_name, DATASET[dataset_name], NB_CLIENTS[dataset_name], split_type,
+                                    batch_size_alignement,
                                     kwargs_train_dataset=dict(root=get_path_to_datasets(), download=True,
                                                               transform=TRANSFORM_TRAIN[dataset_name]),
                                     kwargs_test_dataset=dict(root=get_path_to_datasets(), download=True,
@@ -195,6 +202,7 @@ def get_network(dataset_name: str, algo_name: str, initial_seed: int):
         split_type = "iid"
         train_loaders, val_loaders, test_loaders, natural_split \
             = get_data_from_pytorch(dataset_name, DATASET[dataset_name], NB_CLIENTS[dataset_name], split_type,
+                                    batch_size_alignement,
                                     kwargs_train_dataset=dict(root=get_path_to_datasets(), download=True,
                                                               transform=TRANSFORM_TRAIN[dataset_name]),
                                     kwargs_test_dataset=dict(root=get_path_to_datasets(), download=True,
@@ -220,4 +228,5 @@ def get_network(dataset_name: str, algo_name: str, initial_seed: int):
         train_loaders, val_loaders, test_loaders, natural_split \
             = get_data_from_flamby(DATASET[dataset_name], NB_CLIENTS[dataset_name], dataset_name, BATCH_SIZE[dataset_name],
                                    kwargs_dataloader=dict(batch_size=BATCH_SIZE[dataset_name], shuffle=True))
-    return Network(train_loaders, val_loaders, test_loaders, dataset_name, algo_name, split_type, initial_seed)
+    return Network(train_loaders, val_loaders, test_loaders, dataset_name, algo_name, split_type, initial_seed,
+                   inner_iterations, batch_size_alignement)

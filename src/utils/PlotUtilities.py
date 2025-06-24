@@ -12,7 +12,7 @@ matplotlib.rcParams.update({
     'text.latex.preamble': r'\usepackage{amsfonts}'
 })
 
-from src.data.DatasetConstants import BATCH_SIZE, STEP_SIZE, MOMENTUM, NB_CLIENTS, SPLIT
+from src.data.DatasetConstants import BATCH_SIZE, STEP_SIZE, MOMENTUM, NB_CLIENTS, SPLIT, SCHEDULER_PARAMS
 from src.utils.Utilities import get_project_root, create_folder_if_not_existing
 
 # Default plotting styles
@@ -21,7 +21,8 @@ COLORS = ['tab:blue', 'tab:red', 'tab:orange', 'tab:brown', 'tab:green', 'tab:pu
 MARKERS = ['o', 's', 'D', '^', 'v', '<', 'P', 'X']
 FONTSIZE = 20
 
-def plot_values(epochs, values, legends, metric_name, dataset_name, log=False):
+def plot_values(epochs, values, legends, metric_name: str, dataset_name: str, inner_iterations: int, batch_size_alignement: int,
+                log=False):
     """
     Plot the mean and standard deviation of a metric over epochs for multiple algorithms.
 
@@ -79,10 +80,13 @@ def plot_values(epochs, values, legends, metric_name, dataset_name, log=False):
     folder = f'{root}/pictures/{dataset_name}'
     create_folder_if_not_existing(folder)
     if dataset_name in SPLIT.keys():
-        ID = f"{metric_name}_N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}_{SPLIT[dataset_name]}"
+        ID = (f"{metric_name}_N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
+              f"s{SCHEDULER_PARAMS[0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
+              f"bAl{batch_size_alignement}_{SPLIT[dataset_name]}")
     else:
-        ID = f"{metric_name}_N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}"
-
+        ID = (f"{metric_name}_N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
+              f"s{SCHEDULER_PARAMS[0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
+              f"bAl{batch_size_alignement}_")
     plt.savefig(f"{folder}/{ID}.pdf", bbox_inches='tight', dpi=600)
 
     # Print final metric value (e.g., accuracy or log-loss) in LaTeX tabular format for paper inclusion
@@ -104,7 +108,8 @@ def plot_values(epochs, values, legends, metric_name, dataset_name, log=False):
     print("\\end{tabular}")
 
 
-def plot_weights(weights, dataset_name, algo_name, name="weights", x_axis=None):
+def plot_weights(weights, dataset_name, algo_name, inner_iterations: int, batch_size_alignement: int,
+                 name="weights", x_axis=None):
     """
     Plot the evolution of per-client weights over training rounds.
 
@@ -149,8 +154,11 @@ def plot_weights(weights, dataset_name, algo_name, name="weights", x_axis=None):
     folder = f'{root}/pictures/{dataset_name}'
     create_folder_if_not_existing(folder)
     if dataset_name in SPLIT.keys():
-        ID = f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}_{SPLIT[dataset_name]}"
+        ID = (f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
+              f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
+              f"bAl{batch_size_alignement}_{SPLIT[dataset_name]}")
     else:
-        ID = f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}"
-
+        ID = (f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
+              f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
+              f"bAl{batch_size_alignement}")
     plt.savefig(f"{folder}/{algo_name}_{name}_{ID}.pdf", bbox_inches='tight', dpi=600)
