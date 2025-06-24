@@ -5,8 +5,8 @@ from transformers import AutoModelForMultipleChoice
 
 from src.data.Client import Client
 from src.data.DatasetConstants import (
-    CRITERION, MODELS, STEP_SIZE, METRIC, MOMENTUM, BATCH_SIZE,
-    SCHEDULER_PARAMS, WEIGHT_DECAY, CHECKPOINT, SPLIT, INNER
+    CRITERION, MODELS, STEP_SIZE, METRIC, MOMENTUM,
+    SCHEDULER_PARAMS, WEIGHT_DECAY, CHECKPOINT, SPLIT
 )
 from src.utils.LoggingWriter import LoggingWriter
 from src.utils.PickleHandler import pickle_loader
@@ -85,11 +85,11 @@ class Network:
         if dataset_name in SPLIT.keys():
             self.ID = (f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
                        f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{self.inner_iterations}_"
-                       f"bVal{self.batch_size_alignement}_{SPLIT[dataset_name]}")
+                       f"bAl{self.batch_size_alignement}_{SPLIT[dataset_name]}")
         else:
             self.ID = (f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
                        f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{self.inner_iterations}_"
-                       f"bVal{self.batch_size_alignement}")
+                       f"bAl{self.batch_size_alignement}")
         for i in range(self.nb_clients):
             ID = f"{i}_{self.ID}"
             if dataset_name in ["synth", "synth_iid"]:
@@ -226,7 +226,7 @@ def get_network(dataset_name: str, algo_name: str, initial_seed: int, inner_iter
             = get_synth_data(BATCH_SIZE[dataset_name], nb_clients=NB_CLIENTS[dataset_name], nb_clusters=2, cluster_variance=0, dim=10)
     else:
         train_loaders, val_loaders, test_loaders, natural_split \
-            = get_data_from_flamby(DATASET[dataset_name], NB_CLIENTS[dataset_name], dataset_name, BATCH_SIZE[dataset_name],
+            = get_data_from_flamby(dataset_name, DATASET[dataset_name], NB_CLIENTS[dataset_name], batch_size_alignement,
                                    kwargs_dataloader=dict(batch_size=BATCH_SIZE[dataset_name], shuffle=True))
     return Network(train_loaders, val_loaders, test_loaders, dataset_name, algo_name, split_type, initial_seed,
                    inner_iterations, batch_size_alignement)

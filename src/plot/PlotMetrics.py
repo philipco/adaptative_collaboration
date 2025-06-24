@@ -16,7 +16,7 @@ def extract_number(chaine):
 
 if __name__ == '__main__':
 
-    dataset_name = "mnist"
+    dataset_name = "heart_disease"
     inner_iterations = None
     batch_size_alignement = 512
 
@@ -26,8 +26,8 @@ if __name__ == '__main__':
 
     nb_initial_epochs = 0
 
-    all_algos = ["All-for-one-cont", "Local", "FedAvg", "Apfl"]
-    all_seeds = [127] # Mersenne number, Perfect number, Ramanujan number
+    all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
+    all_seeds = [127, 496, 1729]  # Mersenne number, Perfect number, Ramanujan number
 
     def dict(all_algos, all_seeds):
         return {algo: {s: [] for s in all_seeds} for algo in all_algos}
@@ -53,12 +53,13 @@ if __name__ == '__main__':
                 file_pattern = os.path.join(pickle_folder, f'logging_writer_*_N{NB_CLIENTS[dataset_name]}_'
                                                            f'b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_'
                                                            f's{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_'
-                                                           f'_inner{inner_iterations}_{split_type}.pkl')
+                                                           f'inner{inner_iterations}_bAl{batch_size_alignement}_'
+                                                           f'{split_type}.pkl')
             else:
                 file_pattern = os.path.join(pickle_folder, f'logging_writer_*_N{NB_CLIENTS[dataset_name]}_'
                                                            f'b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_'
                                                            f's{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_'
-                                                           f'_inner{inner_iterations}.pkl')
+                                                           f'inner{inner_iterations}_bAl{batch_size_alignement}.pkl')
             matching_files = glob.glob(file_pattern)
 
             # Extract the file names from the full paths

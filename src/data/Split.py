@@ -82,17 +82,17 @@ def create_non_iid_split(features: List[np.ndarray], labels: List[np.ndarray], n
         print("IID split.")
         return iid_split(features, labels, nb_clients)
 
-    if split_type == "dirichlet":
+    elif split_type == "dirichlet":
         print("Dirichlet split")
         alpha = 0.1 if dataset_name == "mnist" else 1
         return dirichlet_split(features, labels, nb_clients, alpha)
 
-    if split_type == "partition":
+    elif split_type == "partition":
         print("Partition split.")
         return sort_and_partition_split(features, labels, nb_clients)
 
     elif split_type == "cluster":
-        print("Cluser split.")
+        print("Cluster split.")
         return cluster_split(features, labels, nb_clients)
 
 

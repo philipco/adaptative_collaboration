@@ -16,7 +16,7 @@ from transformers import AutoTokenizer
 
 from src.data.DataCollatorForMultipleChoice import DataCollatorForMultipleChoice
 from src.data.LiquidAssetDataset import prepare_liquid_asset
-from src.data.DatasetConstants import CHECKPOINT, INNER, VAL_BATCH_SIZE
+from src.data.DatasetConstants import CHECKPOINT
 from src.data.Split import create_non_iid_split
 from src.data.SyntheticDataset import SyntheticLSRDataset, BinarySynthetic
 from src.utils.Utilities import get_path_to_datasets, print_mem_usage

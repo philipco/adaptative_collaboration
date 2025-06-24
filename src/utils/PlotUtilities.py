@@ -81,11 +81,11 @@ def plot_values(epochs, values, legends, metric_name: str, dataset_name: str, in
     create_folder_if_not_existing(folder)
     if dataset_name in SPLIT.keys():
         ID = (f"{metric_name}_N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
-              f"s{SCHEDULER_PARAMS[0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
+              f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
               f"bAl{batch_size_alignement}_{SPLIT[dataset_name]}")
     else:
         ID = (f"{metric_name}_N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
-              f"s{SCHEDULER_PARAMS[0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
+              f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
               f"bAl{batch_size_alignement}_")
     plt.savefig(f"{folder}/{ID}.pdf", bbox_inches='tight', dpi=600)
 

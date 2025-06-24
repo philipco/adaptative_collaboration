@@ -29,14 +29,15 @@ if __name__ == '__main__':
     parser.add_argument(
         "--inner_iterations",
         type=int,
-        help="Number of inner iterations (if not provided, defaults is None i.e. will take lenghts of the dataset).",
+        help="Number of inner iterations (if not provided, defaults is None leading to take the dataset's size).",
         required=False,
     )
     parser.add_argument(
         "--batch_size_alignement",
         type=int,
-        help="Number of inner iterations (if not provided, defaults is None i.e. will take lenghts of the dataset).",
+        help="Batch size for gradient alignement is weights computations.",
         required=False,
+        default=512
     )
     args = parser.parse_args()
     dataset_name = args.dataset_name
@@ -53,8 +54,8 @@ if __name__ == '__main__':
     if "synth" in dataset_name:
         torch.set_default_dtype(torch.float64)
 
-    all_algos = ["All-for-one-cont", "Local", "FedAvg", "Apfl"]
-    all_seeds = [127] # Mersenne number, Perfect number, Ramanujan number
+    all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
+    all_seeds = [127, 496, 1729] # Mersenne number, Perfect number, Ramanujan number
 
     def dict(all_algos, all_seeds):
         return {algo: {s: [] for s in all_seeds} for algo in all_algos}

@@ -23,7 +23,6 @@ import optuna
 import torch
 from torch import optim
 
-from src.data.DatasetConstants import INNER
 from src.data.Network import Network
 from src.utils.UtilitiesPytorch import aggregate_models, equal, load_new_model, aggregate_gradients, \
     fednova_aggregation, scalar_multiplication
@@ -390,8 +389,7 @@ def compute_weight_based_on_ratio(gradients, nb_points_by_clients, client_idx, n
             print(
                 f"Ratio: {1 - torch.linalg.vector_norm(grads[client_idx] - grads[_]) ** 2 / denominators[client_idx][-1]}")
             print(
-                f"Old ratio: {1 - torch.linalg.vector_norm(grads[client_idx] - grads[_]) / denominators[client_idx][-1]}")
-            print("\n")
+                f"Old ratio: {1 - torch.linalg.vector_norm(grads[client_idx] - grads[_]) / denominators[client_idx][-1]}\n")
     if continuous:
         weight = [ratio(numerators[client_idx][_][-1], denominators[client_idx][-1]) for _ in range(len(gradients))]
     else:
