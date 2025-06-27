@@ -3,7 +3,7 @@ import copy
 import torch
 from sklearn.model_selection import train_test_split
 from torch import nn, optim
-from torch.optim.lr_scheduler import StepLR, LambdaLR
+from torch.optim.lr_scheduler import StepLR, LambdaLR, ReduceLROnPlateau
 
 from src.optim.LinearWarmupScheduler import LinearWarmupScheduler, ConstantLRScheduler
 from src.optim.Train import log_performance
@@ -93,7 +93,7 @@ class Client:
                 self.global_scheduler = LinearWarmupScheduler(self.global_optimizer, 5, 20, plateau=5)
             if self.algo_name  in ["Apfl"]:
                 self.personalized_scheduler = LinearWarmupScheduler(self.personalized_optimizer, 5, 20, plateau=5)
-        elif dataset_name in ["heart_disease", "mnist", "mnist_iid", "cifar10", "cifar10_iid", "ixi", "exam_llm"]:
+        elif dataset_name in ["heart_disease", "mnist", "mnist_iid", "cifar10_iid", "ixi", "exam_llm"]:
             self.scheduler = StepLR(self.optimizer, step_size=scheduler_steps, gamma=scheduler_gamma)
             if self.algo_name in ["Ditto", "Apfl"]:
                 self.global_scheduler = StepLR(self.global_optimizer, step_size=scheduler_steps, gamma=scheduler_gamma)
@@ -105,6 +105,12 @@ class Client:
                 self.global_scheduler = LambdaLR(self.global_optimizer, lr_lambda=lambda t: self.step_size / (t + 1))
             if self.algo_name in ["Apfl"]:
                 self.personalized_scheduler = LambdaLR(self.personalized_optimizer, lr_lambda=lambda t: self.step_size / (t + 1))
+        elif dataset_name in ["cifar10"]:
+            self.scheduler = ReduceLROnPlateau(self.optimizer, 'min')
+            if self.algo_name in ["Ditto", "Apfl"]:
+                self.global_scheduler = ReduceLROnPlateau(self.global_optimizer, 'min')
+            if self.algo_name in ["Apfl"]:
+                self.personalized_scheduler = ReduceLROnPlateau(self.personalized_optimizer, 'min')
         else:
             self.scheduler = ConstantLRScheduler(self.optimizer)
             if self.algo_name in ["Ditto", "Apfl"]:
@@ -157,3 +163,4 @@ class Client:
         self.writer.add_scalar(f'generalisation_loss', abs(train_loss - test_loss), self.last_epoch)
         self.writer.add_scalar(f'generalisation_accuracy', abs(train_acc - test_acc), self.last_epoch)
         self.writer.close()
+        return test_loss

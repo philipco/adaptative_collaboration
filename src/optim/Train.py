@@ -69,7 +69,6 @@ def continue_training(nb_of_local_epoch: int, train_loader, train_iter, trained_
             # Reset iterator if we exhaust the training loader
             train_iter = iter(train_loader)
             batch_training(train_iter, device, trained_model, criterion, optimizer)
-    scheduler.step()
     torch.cuda.empty_cache()
     return train_iter
 

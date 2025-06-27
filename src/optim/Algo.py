@@ -22,6 +22,7 @@ import numpy as np
 import optuna
 import torch
 from torch import optim
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from src.data.Network import Network
 from src.utils.UtilitiesPytorch import aggregate_models, equal, load_new_model, aggregate_gradients, \
@@ -120,15 +121,22 @@ def fedavg_training(network: Network, nb_of_synchronization: int = 5, keep_track
         # Averaging models
         new_model = aggregate_models([client.trained_model for client in network.clients],
                          weights, network.clients[0].device)
-
+        test_loss = 0
         for client_idx in range(network.nb_clients):
             client = network.clients[client_idx]
             load_new_model(client.trained_model, new_model)
             assert equal(client.trained_model, network.clients[0].trained_model), \
                 (f"Models 0 and {client.ID} are not equal.")
-            client.write_train_val_test_performance()
+            test_loss += client.write_train_val_test_performance()
             if keep_track:
                 track_models[client_idx].append([m.data[0].to("cpu") for m in client.trained_model.parameters()])
+
+        for client in network.clients:
+            if isinstance(client.scheduler, ReduceLROnPlateau):
+                client.scheduler.step(test_loss / network.nb_clients)
+            else:
+                client.scheduler.step()
+
         loss_accuracy_central_server(network, weights, network.writer, client.last_epoch)
         print(network.writer.retrieve_information('train_loss')[1][-1])
         print(network.writer.retrieve_information('train_accuracy')[1][-1])
@@ -226,13 +234,17 @@ def local_training(network: Network, nb_of_synchronization: int = 5, pruning: bo
         perf_time = time.time()
 
         # Evaluate clients' performance and update learning rates.
+        test_loss = 0
         for i in range(network.nb_clients):
             client = network.clients[i]
             client.last_epoch += 1
-            client.write_train_val_test_performance()
+            test_loss += client.write_train_val_test_performance()
 
         for client in network.clients:
-            client.scheduler.step()
+            if isinstance(client.scheduler, ReduceLROnPlateau):
+                client.scheduler.step(test_loss / network.nb_clients)
+            else:
+                client.scheduler.step()
 
         # Evaluate performance on the central server.
         loss_accuracy_central_server(network, fed_weights, network.writer, network.clients[0].last_epoch)
@@ -520,13 +532,17 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
 
         perf_time = time.time()
         # Evaluate clients' performance and update learning rates.
+        test_loss = 0
         for i in range(network.nb_clients):
             client = network.clients[i]
             client.last_epoch += 1
-            client.write_train_val_test_performance()
+            test_loss += client.write_train_val_test_performance()
 
         for client in network.clients:
-            client.scheduler.step()
+            if isinstance(client.scheduler, ReduceLROnPlateau):
+                client.scheduler.step(test_loss / network.nb_clients)
+            else:
+                client.scheduler.step()
 
         # Evaluate performance on the central server.
         loss_accuracy_central_server(network, fed_weights, network.writer, client.last_epoch)
@@ -668,7 +684,12 @@ def all_for_all_algo(network: Network, nb_of_synchronization: int = 5, pruning: 
         for client in network.clients:
             client.last_epoch += 1
             client.write_train_val_test_performance()
-            client.scheduler.step()
+
+        for client in network.clients:
+            if isinstance(client.scheduler, ReduceLROnPlateau):
+                client.scheduler.step(test_loss / network.nb_clients)
+            else:
+                client.scheduler.step()
 
         # Evaluate global performance
         loss_accuracy_central_server(network, fed_weights, network.writer, client.last_epoch)
@@ -802,13 +823,17 @@ def cobo_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool = 
         perf_time = time.time()
 
         # Evaluate clients' performance and update learning rates.
+        test_loss = 0
         for i in range(network.nb_clients):
             client = network.clients[i]
             client.last_epoch += 1
-            client.write_train_val_test_performance()
+            test_loss += client.write_train_val_test_performance()
 
         for client in network.clients:
-            client.scheduler.step()
+            if isinstance(client.scheduler, ReduceLROnPlateau):
+                client.scheduler.step(test_loss / network.nb_clients)
+            else:
+                client.scheduler.step()
 
         # Evaluate performance on the central server.
         loss_accuracy_central_server(network, fed_weights, network.writer, client.last_epoch)
@@ -911,11 +936,19 @@ def ditto_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool =
                 (f"Models 0 and {client.ID} are not equal.")
         ########################################
 
+        test_loss = 0
         perf_time = time.time()
         for client in network.clients:
             client.last_epoch += 1
-            client.write_train_val_test_performance()
-            client.scheduler.step()
+            test_loss += client.write_train_val_test_performance()
+
+        for client in network.clients:
+            if isinstance(client.scheduler, ReduceLROnPlateau):
+                client.scheduler.step(test_loss / network.nb_clients)
+                client.global_scheduler.step(test_loss / network.nb_clients)
+            else:
+                client.scheduler.step()
+                client.global_scheduler.step()
 
         # Evaluate global performance
         loss_accuracy_central_server(network, fed_weights, network.writer, client.last_epoch)
@@ -1045,13 +1078,17 @@ def wga_bc_algo(network: Network, nb_of_synchronization: int = 5, beta: int = 10
         perf_time = time.time()
 
         # Evaluate clients' performance and update learning rates.
+        test_loss = 0
         for i in range(network.nb_clients):
             client = network.clients[i]
             client.last_epoch += 1
-            client.write_train_val_test_performance()
+            test_loss += client.write_train_val_test_performance()
 
         for client in network.clients:
-            client.scheduler.step()
+            if isinstance(client.scheduler, ReduceLROnPlateau):
+                client.scheduler.step(test_loss / network.nb_clients)
+            else:
+                client.scheduler.step()
 
         # Evaluate performance on the central server.
         loss_accuracy_central_server(network, fed_weights, network.writer, client.last_epoch)
@@ -1177,13 +1214,20 @@ def apfl_algo(network: Network, nb_of_synchronization: int = 5, keep_track: bool
             assert equal(client.global_model, network.clients[0].global_model), \
                 (f"Models 0 and {client.ID} are not equal.")
         ########################################
-
-
-
+        test_loss = 0
         for client in network.clients:
             client.last_epoch += 1
-            client.write_train_val_test_performance()
-            client.scheduler.step()
+            test_loss += client.write_train_val_test_performance()
+
+        for client in network.clients:
+            if isinstance(client.scheduler, ReduceLROnPlateau):
+                client.scheduler.step(test_loss / network.nb_clients)
+                client.global_scheduler.step(test_loss / network.nb_clients)
+                client.personalized_scheduler(test_loss / network.nb_clients)
+            else:
+                client.scheduler.step()
+                client.global_scheduler.step()
+                client.personalized_scheduler()
 
         loss_accuracy_central_server(network, weights, network.writer, client.last_epoch)
         print(network.writer.retrieve_information('train_loss')[1][-1])
