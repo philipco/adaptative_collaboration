@@ -44,7 +44,7 @@ def loss_accuracy_central_server(network: Network, weights, writer, epoch):
    """
     # On the training set.
     epoch_train_loss, epoch_train_accuracy = 0, 0
-    for i in range(network.nb_clients):
+    for i in range(len(network.clients[:RUNNING_CLIENTS])):
         client = network.clients[i]
         # WARNING : For tcga_brca, we need to evaluate the metric on the full dataset.
         loss, acc = compute_loss_and_accuracy(client.trained_model, client.device, client.train_loader,
@@ -57,7 +57,7 @@ def loss_accuracy_central_server(network: Network, weights, writer, epoch):
 
     # On the test set.
     epoch_test_loss, epoch_test_accuracy = 0, 0
-    for i in range(network.nb_clients):
+    for i in range(len(network.clients[:RUNNING_CLIENTS])):
         client = network.clients[i]
         # WARNING : For tcga_brca, we need to evaluate the metric on the full dataset.
         loss, acc = compute_loss_and_accuracy(client.trained_model, client.device, client.test_loader,
@@ -86,8 +86,8 @@ def fedavg_training(network: Network, nb_of_synchronization: int = 5, keep_track
     Returns:
         Optional[list]: If `keep_track` is True, returns a list containing tracked model parameters.
     """
-    total_nb_points = np.sum([client.nb_train_points for client in network.clients])
-    weights = [client.nb_train_points / total_nb_points for client in network.clients]
+    total_nb_points = np.sum([client.nb_train_points for client in network.clients[:RUNNING_CLIENTS]])
+    weights = [client.nb_train_points / total_nb_points for client in network.clients[:RUNNING_CLIENTS]]
 
     inner_iterations = network.inner_iterations if network.inner_iterations is not None else int(
         np.mean([len(client.train_loader) for client in network.clients]))
@@ -120,7 +120,7 @@ def fedavg_training(network: Network, nb_of_synchronization: int = 5, keep_track
 
         # Averaging models
         new_model = aggregate_models([client.trained_model for client in network.clients[:RUNNING_CLIENTS]],
-                         weights[:RUNNING_CLIENTS], network.clients[0].device)
+                         weights, network.clients[0].device)
         test_loss = 0
         for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
             client = network.clients[client_idx]
@@ -997,8 +997,8 @@ def wga_bc_algo(network: Network, nb_of_synchronization: int = 5, beta: int = 10
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
 
     # Compute Federated Averaging weights based on dataset sizes.
-    total_nb_points = np.sum([client.nb_train_points for client in network.clients])
-    fed_weights = [client.nb_train_points / total_nb_points for client in network.clients]
+    total_nb_points = np.sum([client.nb_train_points for client in network.clients[:RUNNING_CLIENTS]])
+    fed_weights = [client.nb_train_points / total_nb_points for client in network.clients[:RUNNING_CLIENTS]]
 
     # Evaluate initial performance on central server and log clients' metrics.
     loss_accuracy_central_server(network, fed_weights, network.writer, 0)
@@ -1035,8 +1035,6 @@ def wga_bc_algo(network: Network, nb_of_synchronization: int = 5, beta: int = 10
         for k in range(inner_iterations):
 
             # Compute the new model client by client.
-            grad_time = time.time()
-
             for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
                 client = network.clients[client_idx]
                 gradients = []
@@ -1228,7 +1226,7 @@ def apfl_algo(network: Network, nb_of_synchronization: int = 5, keep_track: bool
             else:
                 client.scheduler.step()
                 client.global_scheduler.step()
-                client.personalized_scheduler()
+                client.personalized_scheduler.step()
 
         loss_accuracy_central_server(network, weights, network.writer, client.last_epoch)
         print(network.writer.retrieve_information('train_loss')[1][-1])
