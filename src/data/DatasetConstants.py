@@ -1,6 +1,7 @@
 import torchvision
 import torch.nn as nn
 from torch.nn import MSELoss
+from torchvision import models
 from torchvision.transforms import transforms
 
 from src.optim.CustomLoss import DiceLoss, CoxLoss, L1WeightedAccuracyLoss
@@ -30,7 +31,7 @@ TRANSFORM_TEST_CIFAR10 = transforms.Compose([
 
 MODELS = {"mnist": CNN_MNIST,
           "mnist_iid": CNN_MNIST,
-          "cifar10": LeNet,
+          "cifar10": LeNet, #models.googlenet,
           "cifar10_iid": LeNet,
           "heart_disease": HeartDiseaseRegression,
           "tcga_brca": TcgaRegression,
@@ -91,7 +92,7 @@ NB_CLIENTS = {"mnist": 20,
               "exam_llm": 3}
 STEP_SIZE = {"mnist": 0.1,
              "mnist_iid": 0.1,
-             "cifar10": 0.1,
+             "cifar10": 0.001,
              "cifar10_iid": 0.1,
              "tcga_brca": .015,
              "heart_disease": 0.01,
@@ -115,7 +116,7 @@ WEIGHT_DECAY = {"mnist": 5*10**-4,
                 "exam_llm": 5*10**-4}
 BATCH_SIZE = {"mnist": 16,
               "mnist_iid": 64,
-              "cifar10": 64,
+              "cifar10": 16,
               "cifar10_iid": 64,
               "tcga_brca": 8,
               "heart_disease": 1,
@@ -163,3 +164,5 @@ NB_EPOCHS = {"mnist": 20,
              "exam_llm": 4}
 
 SPLIT = {"mnist": "cluster", "cifar10": "cluster"}
+
+RUNNING_CLIENTS = -1

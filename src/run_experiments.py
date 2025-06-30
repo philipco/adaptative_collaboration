@@ -7,7 +7,7 @@ import argparse
 import torch
 
 from src.data.LiquidAssetDataset import do_prediction_liquid_asset, load_liquid_dataset_test
-from src.data.DatasetConstants import NB_EPOCHS
+from src.data.DatasetConstants import RUNNING_CLIENTS, NB_EPOCHS
 from src.data.Network import get_network
 from src.optim.Algo import fedavg_training, all_for_all_algo, all_for_one_algo, fednova_training, cobo_algo, ditto_algo, \
     wga_bc_algo, apfl_algo, local_training
@@ -31,6 +31,7 @@ if __name__ == '__main__':
         type=int,
         help="Number of inner iterations (if not provided, defaults is None leading to take the dataset's size).",
         required=False,
+        default=50,
     )
     parser.add_argument(
         "--batch_size_alignement",
@@ -95,7 +96,7 @@ if __name__ == '__main__':
             elif algo_name == "Apfl":
                 apfl_algo(network, nb_of_synchronization=nb_epochs)
 
-            for client in network.clients:
+            for client in network.clients[:RUNNING_CLIENTS]:
                 writer = client.writer
 
                 train_epochs[algo_name][seed].append(writer.retrieve_information("train_accuracy")[0])

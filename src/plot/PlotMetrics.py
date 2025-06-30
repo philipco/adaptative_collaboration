@@ -1,7 +1,8 @@
 import glob
 import os
 
-from src.data.DatasetConstants import SPLIT, NB_CLIENTS, BATCH_SIZE, STEP_SIZE, MOMENTUM, SCHEDULER_PARAMS
+from src.data.DatasetConstants import SPLIT, NB_CLIENTS, BATCH_SIZE, STEP_SIZE, MOMENTUM, SCHEDULER_PARAMS, \
+    RUNNING_CLIENTS
 from src.utils.LoggingWriter import LoggingWriter
 from src.utils.PlotUtilities import plot_values, plot_weights
 from src.utils.Utilities import get_project_root
@@ -50,24 +51,26 @@ if __name__ == '__main__':
             # Use glob to find all files matching the pattern
             if dataset_name in ["mnist", "cifar10"]:
                 split_type = SPLIT[dataset_name]
-                file_pattern = os.path.join(pickle_folder, f'logging_writer_*_N{NB_CLIENTS[dataset_name]}_'
-                                                           f'b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_'
-                                                           f's{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_'
-                                                           f'inner{inner_iterations}_bAl{batch_size_alignement}_'
-                                                           f'{split_type}.pkl')
+                regex = f'logging_writer_*_N{NB_CLIENTS[dataset_name]}_'\
+                        f'b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_' \
+                        f's{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_' \
+                        f'inner{inner_iterations}_bAl{batch_size_alignement}_'\
+                        f'{split_type}.pkl'
+                file_pattern = os.path.join(pickle_folder, regex)
             else:
-                file_pattern = os.path.join(pickle_folder, f'logging_writer_*_N{NB_CLIENTS[dataset_name]}_'
-                                                           f'b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_'
-                                                           f's{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_'
-                                                           f'inner{inner_iterations}_bAl{batch_size_alignement}.pkl')
+                regex = f'logging_writer_*_N{NB_CLIENTS[dataset_name]}_'\
+                        f'b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_'\
+                        f's{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_'\
+                        f'inner{inner_iterations}_bAl{batch_size_alignement}.pkl'
+                file_pattern = os.path.join(pickle_folder, regex)
             matching_files = glob.glob(file_pattern)
 
             # Extract the file names from the full paths
             file_names = sorted([os.path.basename(file) for file in matching_files
                                  if os.path.basename(file) != "logging_writer_central.pkl"], key=extract_number)
             if len(file_names) == 0:
-                raise ValueError(f"There is no corresponding files in {pickle_folder}")
-            for name in file_names:
+                raise ValueError(f"There is no corresponding files in {pickle_folder} for:\n {regex}")
+            for name in file_names[:RUNNING_CLIENTS]:
 
                 writer = LoggingWriter.load(pickle_folder, name)
 

@@ -24,12 +24,12 @@ import torch
 from torch import optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
+from src.data.DatasetConstants import RUNNING_CLIENTS
 from src.data.Network import Network
 from src.utils.UtilitiesPytorch import aggregate_models, equal, load_new_model, aggregate_gradients, \
     fednova_aggregation, scalar_multiplication
 from src.optim.Train import compute_loss_and_accuracy, update_model, safe_gradient_computation, continue_training
 from src.utils.Utilities import print_mem_usage
-
 
 def loss_accuracy_central_server(network: Network, weights, writer, epoch):
     """
@@ -95,7 +95,7 @@ def fedavg_training(network: Network, nb_of_synchronization: int = 5, keep_track
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
 
     loss_accuracy_central_server(network, weights, network.writer, 0)
-    for client in network.clients:
+    for client in network.clients[:RUNNING_CLIENTS]:
         assert equal(client.trained_model, network.clients[0].trained_model), \
             (f"Models 0 and {client.ID} are not equal.")
         client.write_train_val_test_performance()
@@ -111,7 +111,7 @@ def fedavg_training(network: Network, nb_of_synchronization: int = 5, keep_track
         print(f"=============== \tEpoch {synchronization_idx} ===============")
         start_time = time.time()
         # One pass of local training
-        for i in range(network.nb_clients):
+        for i in range(len(network.clients[:RUNNING_CLIENTS])):
             client = network.clients[i]
             iter_loaders[i] = continue_training(inner_iterations, client.train_loader, iter_loaders[i],
                                                 client.trained_model, client.criterion, client.optimizer,
@@ -119,10 +119,10 @@ def fedavg_training(network: Network, nb_of_synchronization: int = 5, keep_track
             client.last_epoch += inner_iterations
 
         # Averaging models
-        new_model = aggregate_models([client.trained_model for client in network.clients],
-                         weights, network.clients[0].device)
+        new_model = aggregate_models([client.trained_model for client in network.clients[:RUNNING_CLIENTS]],
+                         weights[:RUNNING_CLIENTS], network.clients[0].device)
         test_loss = 0
-        for client_idx in range(network.nb_clients):
+        for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
             client = network.clients[client_idx]
             load_new_model(client.trained_model, new_model)
             assert equal(client.trained_model, network.clients[0].trained_model), \
@@ -131,7 +131,8 @@ def fedavg_training(network: Network, nb_of_synchronization: int = 5, keep_track
             if keep_track:
                 track_models[client_idx].append([m.data[0].to("cpu") for m in client.trained_model.parameters()])
 
-        for client in network.clients:
+        print("Test loss: ", test_loss)
+        for client in network.clients[:RUNNING_CLIENTS]:
             if isinstance(client.scheduler, ReduceLROnPlateau):
                 client.scheduler.step(test_loss / network.nb_clients)
             else:
@@ -179,7 +180,7 @@ def local_training(network: Network, nb_of_synchronization: int = 5, pruning: bo
 
     # Evaluate initial performance on central server and log clients' metrics.
     loss_accuracy_central_server(network, fed_weights, network.writer, 0)
-    for client in network.clients:
+    for client in network.clients[:RUNNING_CLIENTS]:
         client.write_train_val_test_performance()
 
     # Initialize gradient tracking numerators and denominators for weighting computation.
@@ -200,7 +201,7 @@ def local_training(network: Network, nb_of_synchronization: int = 5, pruning: bo
         weights = {_: None for _ in range(network.nb_clients)}
 
         # Compute personalized weights for each client based on gradient similarity.
-        for client_idx in range(network.nb_clients):
+        for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
             client = network.clients[client_idx]
 
             weights[client_idx] = [1 if c_idx == client_idx else 0 for c_idx in range(network.nb_clients)]
@@ -213,7 +214,7 @@ def local_training(network: Network, nb_of_synchronization: int = 5, pruning: bo
 
         for k in range(inner_iterations):
 
-            for client_idx in range(network.nb_clients):
+            for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
                 client = network.clients[client_idx]
 
                 gradient, iter_loaders[client_idx] = safe_gradient_computation(
@@ -235,12 +236,12 @@ def local_training(network: Network, nb_of_synchronization: int = 5, pruning: bo
 
         # Evaluate clients' performance and update learning rates.
         test_loss = 0
-        for i in range(network.nb_clients):
+        for i in range(len(network.clients[:RUNNING_CLIENTS])):
             client = network.clients[i]
             client.last_epoch += 1
             test_loss += client.write_train_val_test_performance()
 
-        for client in network.clients:
+        for client in network.clients[:RUNNING_CLIENTS]:
             if isinstance(client.scheduler, ReduceLROnPlateau):
                 client.scheduler.step(test_loss / network.nb_clients)
             else:
@@ -445,7 +446,7 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
 
     # Evaluate initial performance on central server and log clients' metrics.
     loss_accuracy_central_server(network, fed_weights, network.writer, 0)
-    for client in network.clients:
+    for client in network.clients[:RUNNING_CLIENTS]:
         client.write_train_val_test_performance()
 
     # Initialize gradient tracking numerators and denominators for weighting computation.
@@ -467,7 +468,7 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
         weights = {_: None for _ in range(network.nb_clients)}
 
         # Compute personalized weights for each client based on gradient similarity.
-        for client_idx in range(network.nb_clients):
+        for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
             gradients_eval = {_: None for _ in range(network.nb_clients)}
             client = network.clients[client_idx]
 
@@ -504,7 +505,7 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
 
             # Compute the new model client by client.
 
-            for client_idx in range(network.nb_clients):
+            for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
                 client = network.clients[client_idx]
                 gradients = []
 
@@ -533,12 +534,12 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
         perf_time = time.time()
         # Evaluate clients' performance and update learning rates.
         test_loss = 0
-        for i in range(network.nb_clients):
+        for i in range(len(network.clients[:RUNNING_CLIENTS])):
             client = network.clients[i]
             client.last_epoch += 1
             test_loss += client.write_train_val_test_performance()
 
-        for client in network.clients:
+        for client in network.clients[:RUNNING_CLIENTS]:
             if isinstance(client.scheduler, ReduceLROnPlateau):
                 client.scheduler.step(test_loss / network.nb_clients)
             else:
@@ -729,7 +730,7 @@ def cobo_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool = 
 
     # Evaluate initial global performance (before training)
     loss_accuracy_central_server(network, fed_weights, network.writer, 0)
-    for client in network.clients:
+    for client in network.clients[:RUNNING_CLIENTS]:
         client.write_train_val_test_performance()
 
     # Optionally track model states and gradients
@@ -747,7 +748,7 @@ def cobo_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool = 
         weights = {_: [torch.tensor(1.) for e in range(network.nb_clients)] for _ in range(network.nb_clients)}
 
         # Compute personalized weights for each client based on gradient similarity.
-        for client_idx in range(network.nb_clients):
+        for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
             # gradients_eval = {_: None for _ in range(network.nb_clients)}
             client = network.clients[client_idx]
 
@@ -789,7 +790,7 @@ def cobo_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool = 
             # Save models at previous iteration
             models = [copy.deepcopy(_.trained_model) for _ in network.clients]
 
-            for client_idx in range(network.nb_clients):
+            for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
                 client = network.clients[client_idx]
                 # We need now only N iterators.
                 gradient, iter_loaders[client_idx][client_idx] = safe_gradient_computation(
@@ -824,12 +825,12 @@ def cobo_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool = 
 
         # Evaluate clients' performance and update learning rates.
         test_loss = 0
-        for i in range(network.nb_clients):
+        for i in range(len(network.clients[:RUNNING_CLIENTS])):
             client = network.clients[i]
             client.last_epoch += 1
             test_loss += client.write_train_val_test_performance()
 
-        for client in network.clients:
+        for client in network.clients[:RUNNING_CLIENTS]:
             if isinstance(client.scheduler, ReduceLROnPlateau):
                 client.scheduler.step(test_loss / network.nb_clients)
             else:
@@ -869,7 +870,7 @@ def ditto_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool =
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
 
     loss_accuracy_central_server(network, fed_weights, network.writer, 0)
-    for client in network.clients:
+    for client in network.clients[:RUNNING_CLIENTS]:
         assert equal(client.trained_model, network.clients[0].trained_model), \
             (f"Models 0 and {client.ID} are not equal.")
         client.write_train_val_test_performance()
@@ -888,7 +889,7 @@ def ditto_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool =
 
         ################### First training the global model. ####################
         # One pass of local training
-        for i in range(network.nb_clients):
+        for i in range(len(network.clients[:RUNNING_CLIENTS])):
             client = network.clients[i]
             iter_loaders[i] = continue_training(inner_iterations, client.train_loader, iter_loaders[i],
                                                 client.global_model, client.criterion, client.global_optimizer,
@@ -896,14 +897,14 @@ def ditto_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool =
             client.last_epoch += inner_iterations
 
         # Averaging models
-        new_model = aggregate_models([client.global_model for client in network.clients],
-                                     [1 / network.nb_clients for _ in range(network.nb_clients)],
+        new_model = aggregate_models([client.global_model for client in network.clients[:RUNNING_CLIENTS]],
+                                     [1 / len(network.clients[:RUNNING_CLIENTS]) for _ in range(len(network.clients[:RUNNING_CLIENTS]))],
                                      network.clients[0].device)
         ########################################
 
         #################### Train personalized model ####################
         # One pass of local training
-        for client_idx in range(network.nb_clients):
+        for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
             client = network.clients[client_idx]
             for k in range(inner_iterations):
                 gradient, iter_loaders[client_idx] = safe_gradient_computation(
@@ -929,7 +930,7 @@ def ditto_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool =
         ########################################
 
         #################### Update the global model ####################
-        for client_idx in range(network.nb_clients):
+        for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
             client = network.clients[client_idx]
             load_new_model(client.global_model, new_model)
             assert equal(client.global_model, network.clients[0].global_model), \
@@ -938,11 +939,11 @@ def ditto_algo(network: Network, nb_of_synchronization: int = 5, pruning: bool =
 
         test_loss = 0
         perf_time = time.time()
-        for client in network.clients:
+        for client in network.clients[:RUNNING_CLIENTS]:
             client.last_epoch += 1
             test_loss += client.write_train_val_test_performance()
 
-        for client in network.clients:
+        for client in network.clients[:RUNNING_CLIENTS]:
             if isinstance(client.scheduler, ReduceLROnPlateau):
                 client.scheduler.step(test_loss / network.nb_clients)
                 client.global_scheduler.step(test_loss / network.nb_clients)
@@ -1001,7 +1002,7 @@ def wga_bc_algo(network: Network, nb_of_synchronization: int = 5, beta: int = 10
 
     # Evaluate initial performance on central server and log clients' metrics.
     loss_accuracy_central_server(network, fed_weights, network.writer, 0)
-    for client in network.clients:
+    for client in network.clients[:RUNNING_CLIENTS]:
         client.write_train_val_test_performance()
 
     controls = [[torch.zeros_like(p, dtype=p.dtype, device=p.device) for p in network.clients[0].trained_model.parameters()] for _ in network.clients]
@@ -1026,7 +1027,7 @@ def wga_bc_algo(network: Network, nb_of_synchronization: int = 5, beta: int = 10
         print(f"Alpha: {alpha}.")
 
         # Compute personalized weights for each client based on gradient similarity.
-        for client_idx in range(network.nb_clients):
+        for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
             client = network.clients[client_idx]
 
             taus[client_idx] = [c.nb_train_points**2 / (client.nb_train_points**2 * network.nb_clients**2) for c in network.clients]
@@ -1036,7 +1037,7 @@ def wga_bc_algo(network: Network, nb_of_synchronization: int = 5, beta: int = 10
             # Compute the new model client by client.
             grad_time = time.time()
 
-            for client_idx in range(network.nb_clients):
+            for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
                 client = network.clients[client_idx]
                 gradients = []
 
@@ -1079,12 +1080,12 @@ def wga_bc_algo(network: Network, nb_of_synchronization: int = 5, beta: int = 10
 
         # Evaluate clients' performance and update learning rates.
         test_loss = 0
-        for i in range(network.nb_clients):
+        for i in range(len(network.clients[:RUNNING_CLIENTS])):
             client = network.clients[i]
             client.last_epoch += 1
             test_loss += client.write_train_val_test_performance()
 
-        for client in network.clients:
+        for client in network.clients[:RUNNING_CLIENTS]:
             if isinstance(client.scheduler, ReduceLROnPlateau):
                 client.scheduler.step(test_loss / network.nb_clients)
             else:
@@ -1136,7 +1137,7 @@ def apfl_algo(network: Network, nb_of_synchronization: int = 5, keep_track: bool
     print(f"--- nb_of_communication: {nb_of_synchronization} - inner_epochs {inner_iterations} ---")
 
     loss_accuracy_central_server(network, weights, network.writer, 0)
-    for client in network.clients:
+    for client in network.clients[:RUNNING_CLIENTS]:
         assert equal(client.trained_model, network.clients[0].trained_model), \
             (f"Models 0 and {client.ID} are not equal.")
         client.write_train_val_test_performance()
@@ -1161,7 +1162,7 @@ def apfl_algo(network: Network, nb_of_synchronization: int = 5, keep_track: bool
 
             ################### First training the global model. ####################
             # One pass of local training
-            for i in range(network.nb_clients):
+            for i in range(len(network.clients[:RUNNING_CLIENTS])):
                 client = network.clients[i]
                 iter_loaders[i] = continue_training(1, client.train_loader, iter_loaders[i],
                                                     client.global_model, client.criterion, client.global_optimizer,
@@ -1169,7 +1170,7 @@ def apfl_algo(network: Network, nb_of_synchronization: int = 5, keep_track: bool
             ########################################
 
             ################### Second training the personalized model. ####################
-            for client_idx in range(network.nb_clients):
+            for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
                 client = network.clients[client_idx]
                 gradient, iter_loaders[client_idx] = safe_gradient_computation(
                     client.train_loader, iter_loaders[client_idx], client.device,
@@ -1188,7 +1189,7 @@ def apfl_algo(network: Network, nb_of_synchronization: int = 5, keep_track: bool
             ########################################
 
             #################### Update the trained final local model ####################
-            for client_idx in range(network.nb_clients):
+            for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
                 client = network.clients[client_idx]
                 new_update_in_avg = aggregate_models([client.personalized_model, client.global_model],
                                                      [alpha[client_idx], 1 - alpha[client_idx]], client.device)
@@ -1205,10 +1206,10 @@ def apfl_algo(network: Network, nb_of_synchronization: int = 5, keep_track: bool
 
         #################### Update the global model by averaging ####################
         # Averaging models
-        new_model = aggregate_models([client.global_model for client in network.clients],
-                                     [1 / network.nb_clients for _ in range(network.nb_clients)],
+        new_model = aggregate_models([client.global_model for client in network.clients[:RUNNING_CLIENTS]],
+                                     [1 / len(network.clients[:RUNNING_CLIENTS]) for _ in range(len(network.clients[:RUNNING_CLIENTS]))],
                                      network.clients[0].device)
-        for client_idx in range(network.nb_clients):
+        for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
             client = network.clients[client_idx]
             load_new_model(client.global_model, new_model)
             assert equal(client.global_model, network.clients[0].global_model), \
@@ -1219,11 +1220,11 @@ def apfl_algo(network: Network, nb_of_synchronization: int = 5, keep_track: bool
             client.last_epoch += 1
             test_loss += client.write_train_val_test_performance()
 
-        for client in network.clients:
+        for client in network.clients[:RUNNING_CLIENTS]:
             if isinstance(client.scheduler, ReduceLROnPlateau):
                 client.scheduler.step(test_loss / network.nb_clients)
                 client.global_scheduler.step(test_loss / network.nb_clients)
-                client.personalized_scheduler(test_loss / network.nb_clients)
+                client.personalized_scheduler.step(test_loss / network.nb_clients)
             else:
                 client.scheduler.step()
                 client.global_scheduler.step()

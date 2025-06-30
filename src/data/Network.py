@@ -76,7 +76,9 @@ class Network:
             # Freeze all pretrained weights
             for param in net.base_model.parameters():
                 param.requires_grad = False
-        else:
+        try:
+            net = MODELS[dataset_name](pretrained=True)
+        except TypeError:
             net = MODELS[dataset_name]()
 
         d = self.count_trainable_parameters(net)
