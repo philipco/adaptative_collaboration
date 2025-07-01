@@ -55,6 +55,11 @@ def iid_split(data: np.ndarray, labels: np.ndarray, nb_clients: int) -> [List[np
         Y.append(labels[split_indices[i]])
     return X, Y
 
+    # for i in range(nb_clients):
+    #     X.append(data[indices][:400])
+    #     Y.append(labels[indices][:400])
+    # return X, Y
+
 
 def create_non_iid_split(features: List[np.ndarray], labels: List[np.ndarray], nb_clients: int,
                          split_type: str, dataset_name: str) -> [List[np.ndarray], List[np.ndarray]]:
@@ -73,18 +78,22 @@ def create_non_iid_split(features: List[np.ndarray], labels: List[np.ndarray], n
     """
     np.random.seed(2024)
 
-    if split_type == "iid":
+    if split_type in ["iid", "inverse"]:
         print("IID split.")
         return iid_split(features, labels, nb_clients)
 
-    if split_type == "dirichlet":
+    elif split_type == "dirichlet":
         print("Dirichlet split")
         alpha = 0.1 if dataset_name == "mnist" else 1
         return dirichlet_split(features, labels, nb_clients, alpha)
 
-    if split_type == "partition":
+    elif split_type == "partition":
         print("Partition split.")
         return sort_and_partition_split(features, labels, nb_clients)
+
+    elif split_type == "cluster":
+        print("Cluster split.")
+        return cluster_split(features, labels, nb_clients)
 
 
 def sort_and_partition_split(features: np.ndarray, labels: np.ndarray, nb_clients: int) \
@@ -135,6 +144,79 @@ def sort_and_partition_split(features: np.ndarray, labels: np.ndarray, nb_client
         Y[idx_client] = torch.concat(Y[idx_client])
 
     return X, Y
+
+
+def cluster_split(features: np.ndarray, labels: np.ndarray, nb_clients: int) -> (
+        [List[np.ndarray], List[np.ndarray]]):
+    client_features = []
+    client_labels = []
+
+    mask = np.isin(labels, [0, 1, 2, 3, 4])
+
+
+    for i in range(nb_clients):
+        if i % 2 == 1:
+            # Odd clients: labels 1 to 4
+            nb_points_by_clients = int(2 * len(labels[mask]) / nb_clients)
+            client_features.append(features[mask][nb_points_by_clients * (i // 2): nb_points_by_clients * (i // 2 + 1)])
+            client_labels.append(labels[mask][nb_points_by_clients * (i // 2): nb_points_by_clients * (i // 2 +1)])
+
+        else:
+            # Even clients: labels 5 to 9
+            nb_points_by_clients = int(2 * len(labels[~mask]) / nb_clients)
+            client_features.append(features[~mask][nb_points_by_clients * (i // 2): nb_points_by_clients * (i // 2 + 1)])
+            client_labels.append(labels[~mask][nb_points_by_clients * (i // 2): nb_points_by_clients * (i // 2 + 1)])
+
+    return client_features, client_labels
+
+
+def dirichlet_split(data: np.ndarray, labels: np.ndarray, nb_clients: int, dirichlet_coef: float = 1.0) \
+        -> [List[np.ndarray], List[np.ndarray]]:
+    """
+    Non-IID split using Dirichlet distribution over labels.
+
+    Simulates client-specific data preferences where label distributions are sampled
+    from a Dirichlet distribution.
+
+    Args:
+        data (np.ndarray): Feature matrix.
+        labels (np.ndarray): Corresponding labels.
+        nb_clients (int): Number of clients.
+        dirichlet_coef (float): Dirichlet distribution coefficient (smaller => more heterogeneous).
+
+    Returns:
+        Tuple[List[np.ndarray], List[np.ndarray]]: Features and labels for each client.
+    """
+    nb_labels = len(np.unique(labels))  # Total number of unique labels
+
+    X, Y = [[] for _ in range(nb_clients)], [[] for _ in range(nb_clients)]
+
+    for idx_label in range(nb_labels):
+        # Sample label proportions for each client
+        proportions = np.random.dirichlet(np.repeat(dirichlet_coef, nb_clients))
+        assert round(proportions.sum()) == 1, "The sum of proportions is not equal to 1."
+
+        # Get all samples for the current label
+        label_data = data[labels == idx_label]
+        label_targets = labels[labels == idx_label]
+        N = len(label_targets)
+
+        # Compute split indices and assign to clients
+        split_indices = [np.sum([int(proportions[k] * N) for k in range(j)]) for j in range(1, nb_clients)]
+        features_split = np.split(label_data, split_indices)
+        labels_split = np.split(label_targets, split_indices)
+
+        for j in range(nb_clients):
+            X[j].append(features_split[j])
+            Y[j].append(labels_split[j])
+
+    # Final concatenation for each client
+    for idx_client in range(nb_clients):
+        X[idx_client] = torch.concat(X[idx_client])
+        Y[idx_client] = torch.concat(Y[idx_client])
+
+    return X, Y
+
 
 
 def dirichlet_split(data: np.ndarray, labels: np.ndarray, nb_clients: int, dirichlet_coef: float = 1.0) \

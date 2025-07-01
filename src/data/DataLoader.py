@@ -18,7 +18,7 @@ from src.data.DataCollatorForMultipleChoice import DataCollatorForMultipleChoice
 from src.data.LiquidAssetDataset import prepare_liquid_asset
 from src.data.DatasetConstants import CHECKPOINT
 from src.data.Split import create_non_iid_split
-from src.data.SyntheticDataset import SyntheticLSRDataset
+from src.data.SyntheticDataset import SyntheticLSRDataset, BinarySynthetic
 from src.utils.Utilities import get_path_to_datasets, print_mem_usage
 
 
@@ -114,12 +114,13 @@ def generate_client_models(N: int, K: int, d: int, cluster_variance: float = 2):
     """
     # Generate K cluster centers
     # Create an uninitialized tensor and fill it with values from the uniform distribution
-    cluster_centers = [torch.empty(d).uniform_(-5, 5) for _ in range(K)]
+    # cluster_centers = [torch.DoubleTensor([10, 10]), -torch.DoubleTensor([5, 5])] #
+    cluster_centers = [torch.empty(d).uniform_(-10, 10) for _ in range(K)]
     # Assign each client to a cluster and generate their model
     variations = [cluster_variance * torch.randn(d) for i in range(N)]
     return [cluster_centers[i % K] + variations[i] for i in range(N)], variations
 
-def get_synth_data(batch_size: int, nb_clients = 4, nb_clusters = 1, dim: int = 2) -> tuple[
+def get_synth_data(batch_size: int, nb_clients = 20, nb_clusters = 1, dim: int = 2, cluster_variance: float = 0.1) -> tuple[
     list[DataLoader[Any]], list[DataLoader[Any]], list[DataLoader[Any]], bool]:
     """Generate synthetic data (LSR) for federated learning experiments.
 
@@ -128,6 +129,7 @@ def get_synth_data(batch_size: int, nb_clients = 4, nb_clusters = 1, dim: int = 
         nb_clients (int, optional): Number of clients. Defaults to 4.
         nb_clusters (int, optional): Number of clusters. Defaults to 1.
         dim (int, optional): Dimensionality of the data. Defaults to 2.
+        cluster_variance (float, optional): Variance of optimal models inside a cluster. Defaults to 0.01/
 
     Returns:
         Tuple[List[DataLoader], List[DataLoader], List[DataLoader], bool]:
@@ -136,7 +138,7 @@ def get_synth_data(batch_size: int, nb_clients = 4, nb_clusters = 1, dim: int = 
             - test_loaders: List of DataLoaders for test data.
             - natural_split: Boolean indicating if the data split is natural.
         """
-    true_models, variations = generate_client_models(nb_clients, nb_clusters, dim, cluster_variance=0.1)
+    true_models, variations = generate_client_models(nb_clients, nb_clusters, dim, cluster_variance=cluster_variance)
     datasets = [SyntheticLSRDataset(m, v, batch_size) for (m, v) in zip(true_models, variations)]
 
     train_loaders = [DataLoader(d, batch_size=None) for d in datasets]
@@ -147,7 +149,7 @@ def get_synth_data(batch_size: int, nb_clients = 4, nb_clusters = 1, dim: int = 
     return train_loaders, val_loaders, test_loaders, natural_split
 
 
-def get_data_from_pytorch(dataset_name: str, fed_dataset, nb_of_clients, split_type, kwargs_train_dataset, kwargs_test_dataset,
+def get_data_from_pytorch(dataset_name: str, fed_dataset, nb_of_clients, split_type, batch_size_alignement, kwargs_train_dataset, kwargs_test_dataset,
                           kwargs_dataloader) -> tuple[list[DataLoader[Any]], list[DataLoader[Any]], list[DataLoader[Any]], bool]:
     """Load and preprocess data from PyTorch datasets for federated learning.
 
@@ -190,12 +192,12 @@ def get_data_from_pytorch(dataset_name: str, fed_dataset, nb_of_clients, split_t
     X_train, X_val, X_test, Y_train, Y_val, Y_test = [], [], [], [], [], []
     for (x,y) in zip(X, Y):
         x2, x_test, y2, y_test = train_test_split(x, y, test_size=0.2, random_state=2024)
-        x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.1, random_state=2024)
-        X_train.append(x_train)
-        X_val.append(x_val)
+        # x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.1, random_state=2024)
+        X_train.append(x2)
+        # X_val.append(x_val)
         X_test.append(x_test)
-        Y_train.append(y_train)
-        Y_val.append(y_val)
+        Y_train.append(y2)
+        # Y_val.append(y_val)
         Y_test.append(y_test)
 
     print_mem_usage()
@@ -207,15 +209,24 @@ def get_data_from_pytorch(dataset_name: str, fed_dataset, nb_of_clients, split_t
 
     print_mem_usage()
 
-    train_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
-    val_loaders = [DataLoader(TensorDataset(X_val[i], Y_val[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
-    test_loaders = [DataLoader(TensorDataset(X_test[i], Y_test[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
+    if split_type == "inverse":
+        train_loaders = [DataLoader(BinarySynthetic(X_train[i], Y_train[i], i), **kwargs_dataloader) for i in
+                         range(nb_of_clients)]
+        test_loaders = [DataLoader(BinarySynthetic(X_train[i], Y_train[i], i), **kwargs_dataloader) for i in
+                        range(nb_of_clients)]
+        kwargs_dataloader["batch_size"] = batch_size_alignement
+        val_loaders = [DataLoader(BinarySynthetic(X_train[i], Y_train[i], i), **kwargs_dataloader) for i in
+                       range(nb_of_clients)]
+    else:
+        train_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
+        test_loaders = [DataLoader(TensorDataset(X_test[i], Y_test[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
+        kwargs_dataloader["batch_size"] = batch_size_alignement
+        val_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
 
     natural_split = False
     return train_loaders, val_loaders, test_loaders, natural_split
 
-
-def get_data_from_flamby(fed_dataset, nb_of_clients, dataset_name: str, batch_size, kwargs_dataloader, debug: bool = False) \
+def get_data_from_flamby(dataset_name: str, fed_dataset, nb_of_clients, batch_size_alignement: int, kwargs_dataloader, debug: bool = False) \
         -> tuple[list[DataLoader[Any]], list[DataLoader[Any]], list[DataLoader[Any]], bool]:
     """Load and preprocess data from FLamby datasets for federated learning.
 
@@ -259,11 +270,11 @@ def get_data_from_flamby(fed_dataset, nb_of_clients, dataset_name: str, batch_si
         X_test.append(torch.concat([data_test]))
         Y_test.append(torch.concat([labels_test]))
 
-    train_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), batch_size=batch_size) for i in
+    train_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in
                      range(nb_of_clients)]
-    val_loaders = [DataLoader(TensorDataset(X_val[i], Y_val[i]), batch_size=batch_size) for i in range(nb_of_clients)]
-    test_loaders = [DataLoader(TensorDataset(X_test[i], Y_test[i]), batch_size=batch_size) for i in
-                    range(nb_of_clients)]
+    test_loaders = [DataLoader(TensorDataset(X_test[i], Y_test[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
+    kwargs_dataloader["batch_size"] = batch_size_alignement
+    val_loaders = [DataLoader(TensorDataset(X_train[i], Y_train[i]), **kwargs_dataloader) for i in range(nb_of_clients)]
 
     natural_split = True
     return train_loaders, val_loaders, test_loaders, natural_split

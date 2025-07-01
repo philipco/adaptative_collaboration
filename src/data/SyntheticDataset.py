@@ -13,7 +13,7 @@ loss are estimated using the empirical covariance of the features.
 import torch
 from numpy.random import multivariate_normal
 from scipy.stats import ortho_group
-from torch.utils.data import IterableDataset
+from torch.utils.data import IterableDataset, Dataset
 
 
 class SyntheticLSRDataset(IterableDataset):
@@ -123,3 +123,26 @@ class SyntheticLSRDataset(IterableDataset):
         print("Strong convexity constant:", mu)
 
         return lips, mu
+
+
+class BinarySynthetic(Dataset):
+    def __init__(self, data, targets, client_id):
+        self.data = data
+        self.targets = targets.clone()
+        even_digits = torch.tensor([0, 1, 2, 6, 8])
+        is_even = client_id % 2 == 0
+
+        # Map labels based on client index parity
+        even_mask = torch.isin(self.targets, even_digits)
+        if is_even:
+            self.targets[even_mask] = 0
+            self.targets[~even_mask] = 1
+        else:
+            self.targets[even_mask] = 1
+            self.targets[~even_mask] = 0
+
+    def __len__(self):
+        return len(self.targets)
+
+    def __getitem__(self, idx):
+        return self.data[idx], self.targets[idx]

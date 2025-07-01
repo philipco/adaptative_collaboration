@@ -1,6 +1,7 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from numpy import linspace
 
 # Configure matplotlib to use LaTeX for all text rendering
 matplotlib.rcParams.update({
@@ -11,15 +12,17 @@ matplotlib.rcParams.update({
     'text.latex.preamble': r'\usepackage{amsfonts}'
 })
 
-from src.data.DatasetConstants import BATCH_SIZE, STEP_SIZE, MOMENTUM
+from src.data.DatasetConstants import BATCH_SIZE, STEP_SIZE, MOMENTUM, NB_CLIENTS, SPLIT, SCHEDULER_PARAMS
 from src.utils.Utilities import get_project_root, create_folder_if_not_existing
 
 # Default plotting styles
-COLORS = ['tab:blue', 'tab:red', 'tab:orange', 'tab:brown', 'tab:green', 'tab:purple']
-MARKERS = ['o', 's', 'D', '^', 'v', '<']
-FONTSIZE = 25
+COLORS = ['tab:blue', 'tab:red', 'tab:orange', 'tab:brown', 'tab:green', 'tab:purple', 'tab:cyan', 'tab:pink',
+          'tab:grey']
+MARKERS = ['o', 's', 'D', '^', 'v', '<', 'P', 'X']
+FONTSIZE = 20
 
-def plot_values(epochs, values, legends, metric_name, dataset_name, log=False):
+def plot_values(epochs, values, legends, metric_name: str, dataset_name: str, inner_iterations: int, batch_size_alignement: int,
+                log=False):
     """
     Plot the mean and standard deviation of a metric over epochs for multiple algorithms.
 
@@ -31,20 +34,27 @@ def plot_values(epochs, values, legends, metric_name, dataset_name, log=False):
         dataset_name (str): Dataset used (used to determine save path and legend position).
         log (bool): If True, apply log10 transform to the values before averaging and plotting.
     """
-    plt.figure(figsize=(9, 6))
+    plt.figure(figsize=(9, 7))
     i = 0
 
     # Plot each algorithm's mean and std across runs
     for algo_name in legends:
+        value_to_plot = []
+        for s in values[algo_name].keys():
+            for l in values[algo_name][s]:
+                value_to_plot.append(l)
         if log:
-            avg_values = np.mean([np.log10(v) for v in values[algo_name]], axis=0)
-            avg_values_var = np.std([np.log10(v) for v in values[algo_name]], axis=0)
+            avg_values = np.mean([np.log10(v) for v in value_to_plot], axis=0)
+            avg_values_var = np.std([np.log10(v) for v in value_to_plot], axis=0)
         else:
-            avg_values = np.mean(values[algo_name], axis=0)
-            avg_values_var = np.std(values[algo_name], axis=0)
+            avg_values = np.mean(value_to_plot, axis=0)
+            avg_values_var = np.std(value_to_plot, axis=0)
 
-        plt.plot(epochs["Local"][0], avg_values, linestyle='-', color=COLORS[i], label=algo_name, linewidth=5)
-        plt.fill_between(epochs["Local"][0], avg_values - avg_values_var, avg_values + avg_values_var, alpha=0.2,
+        epochs_axis = np.linspace(0, len(avg_values)-1, len(avg_values))
+        # plt.plot(np.log10(epochs_axis), avg_values, linestyle='-', color=COLORS[i], label=algo_name, linewidth=5)
+        # plt.fill_between(np.log10(epochs_axis), avg_values - avg_values_var, avg_values + avg_values_var, alpha=0.2,
+        plt.plot(epochs_axis, avg_values, linestyle='-', color=COLORS[i], label=algo_name, linewidth=5)
+        plt.fill_between(epochs_axis, avg_values - avg_values_var, avg_values + avg_values_var, alpha=0.2,
                          color=COLORS[i])
         i += 1
 
@@ -56,21 +66,28 @@ def plot_values(epochs, values, legends, metric_name, dataset_name, log=False):
 
     # Heuristic for legend placement depending on dataset and metric
     if (metric_name == "log(Test loss)" and dataset_name == "mnist"):
-        loc = "upper right"
+        loc = "lower left"
     elif (metric_name == "Test accuracy" and dataset_name == "mnist"):
         loc = "lower right"
     else:
         loc = "lower left"
 
     if dataset_name in ["mnist", "synth"]:
-        plt.legend(fontsize=FONTSIZE, loc=loc)
+        plt.legend(fontsize=FONTSIZE, loc=loc, ncol=2)
 
     # Save figure to disk
     root = get_project_root()
     folder = f'{root}/pictures/{dataset_name}'
     create_folder_if_not_existing(folder)
-    plt.savefig(f"{folder}/{metric_name}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}.pdf",
-                bbox_inches='tight', dpi=600)
+    if dataset_name in SPLIT.keys():
+        ID = (f"{metric_name}_N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
+              f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
+              f"bAl{batch_size_alignement}_{SPLIT[dataset_name]}")
+    else:
+        ID = (f"{metric_name}_N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
+              f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
+              f"bAl{batch_size_alignement}_")
+    plt.savefig(f"{folder}/{ID}.pdf", bbox_inches='tight', dpi=600)
 
     # Print final metric value (e.g., accuracy or log-loss) in LaTeX tabular format for paper inclusion
     print("\\begin{tabular}{|c|c|}")
@@ -78,16 +95,21 @@ def plot_values(epochs, values, legends, metric_name, dataset_name, log=False):
     print(f"Algorithm & {metric_name} \\\\")
     print("\\hline")
     for algo_name in legends:
+        value_to_plot = []
+        for s in values[algo_name].keys():
+            for l in values[algo_name][s]:
+                value_to_plot.append(l)
         if log:
-            final_value = np.mean([np.log10(v) for v in values[algo_name]], axis=0)[-1]
+            final_value = np.mean([np.log10(v) for v in value_to_plot], axis=0)[-1]
         else:
-            final_value = np.mean(values[algo_name], axis=0)[-1]
+            final_value = np.mean(value_to_plot, axis=0)[-1]
         print(f"{algo_name} & {final_value:.4f} \\\\")
     print("\\hline")
     print("\\end{tabular}")
 
 
-def plot_weights(weights, dataset_name, algo_name, name="weights", x_axis=None):
+def plot_weights(weights, dataset_name, algo_name, inner_iterations: int, batch_size_alignement: int,
+                 name="weights", x_axis=None):
     """
     Plot the evolution of per-client weights over training rounds.
 
@@ -131,5 +153,12 @@ def plot_weights(weights, dataset_name, algo_name, name="weights", x_axis=None):
     root = get_project_root()
     folder = f'{root}/pictures/{dataset_name}'
     create_folder_if_not_existing(folder)
-    plt.savefig(f"{folder}/{algo_name}_{name}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_m{MOMENTUM[dataset_name]}.pdf",
-                bbox_inches='tight', dpi=600)
+    if dataset_name in SPLIT.keys():
+        ID = (f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
+              f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
+              f"bAl{batch_size_alignement}_{SPLIT[dataset_name]}")
+    else:
+        ID = (f"N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
+              f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
+              f"bAl{batch_size_alignement}")
+    plt.savefig(f"{folder}/{algo_name}_{name}_{ID}.pdf", bbox_inches='tight', dpi=600)

@@ -7,13 +7,12 @@ import argparse
 import torch
 
 from src.data.LiquidAssetDataset import do_prediction_liquid_asset, load_liquid_dataset_test
-from src.data.DatasetConstants import NB_EPOCHS
+from src.data.DatasetConstants import RUNNING_CLIENTS, NB_EPOCHS
 from src.data.Network import get_network
-from src.optim.Algo import fedavg_training, all_for_all_algo, all_for_one_algo, fednova_training
+from src.optim.Algo import fedavg_training, all_for_all_algo, all_for_one_algo, fednova_training, cobo_algo, ditto_algo, \
+    wga_bc_algo, apfl_algo, local_training
 from src.utils.PlotUtilities import plot_values, plot_weights
 from src.utils.Utilities import get_path_to_datasets
-
-NB_RUN = 1
 
 if __name__ == '__main__':
 
@@ -27,12 +26,28 @@ if __name__ == '__main__':
         help="Name of the dataset.",
         required=True,
     )
+    parser.add_argument(
+        "--inner_iterations",
+        type=int,
+        help="Number of inner iterations (if not provided, defaults is None leading to take the dataset's size).",
+        required=False,
+        default=50,
+    )
+    parser.add_argument(
+        "--batch_size_alignement",
+        type=int,
+        help="Batch size for gradient alignement is weights computations.",
+        required=False,
+        default=512
+    )
     args = parser.parse_args()
     dataset_name = args.dataset_name
+    inner_iterations = args.inner_iterations
+    batch_size_alignement = args.batch_size_alignement
 
     assert dataset_name in ["exam_llm", "mnist", "mnist_iid", "cifar10", "cifar10_iid", "heart_disease", "tcga_brca", "ixi", "liquid_asset",
                             "synth", "synth_complex"], "Dataset not recognized."
-    print(f"### ================== DATASET: {dataset_name} ================== ###")
+    print(f"### ================== DATASET: {dataset_name} - inner iterations: {inner_iterations} ================== ###")
 
     nb_epochs = NB_EPOCHS[dataset_name]
 
@@ -40,55 +55,74 @@ if __name__ == '__main__':
     if "synth" in dataset_name:
         torch.set_default_dtype(torch.float64)
 
-    all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg"]
+    all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
+    all_seeds = [127, 496, 1729] # Mersenne number, Perfect number, Ramanujan number
 
-    train_epochs, train_losses, train_accuracies = {algo: [] for algo in all_algos}, {algo: [] for algo in all_algos}, {
-        algo: [] for algo in all_algos}
-    test_epochs, test_losses, test_accuracies = {algo: [] for algo in all_algos}, {algo: [] for algo in all_algos}, {
-        algo: [] for algo in all_algos}
-    weights, ratio = {algo: [] for algo in all_algos}, {algo: [] for algo in all_algos}
+    def dict(all_algos, all_seeds):
+        return {algo: {s: [] for s in all_seeds} for algo in all_algos}
+
+    train_epochs, train_losses, train_accuracies = dict(all_algos, all_seeds), dict(all_algos, all_seeds), dict(all_algos, all_seeds)
+    test_epochs, test_losses, test_accuracies = dict(all_algos, all_seeds), dict(all_algos, all_seeds), dict(all_algos, all_seeds)
+    weights, ratio = dict(all_algos, all_seeds), dict(all_algos, all_seeds)
     
     for algo_name in all_algos:
-        assert algo_name in ["All-for-one-bin", "All-for-one-cont", "All-for-all", "Local", "FedAvg", "FedNova"], "Algorithm not recognized."
+
+        assert algo_name in ["All-for-one-bin", "All-for-one-cont", "All-for-all", "Local", "FedAvg", "FedNova",
+                             "Cobo", "Ditto", "Wga-bc", "Apfl"], "Algorithm not recognized."
         print(f"--- ================== ALGO: {algo_name} ================== ---")
 
-        network = get_network(dataset_name, algo_name)
+        for seed in all_seeds:
+            network = get_network(dataset_name, algo_name, initial_seed=seed, inner_iterations=inner_iterations,
+                                  batch_size_alignement=batch_size_alignement)
 
-        if algo_name == "FedAvg":
-            fedavg_training(network, nb_of_synchronization=nb_epochs)
-        elif algo_name == "All-for-all":
-            all_for_all_algo(network, nb_of_synchronization=nb_epochs, collab_based_on="ratio")
-        elif algo_name == "Local":
-            all_for_all_algo(network, nb_of_synchronization=nb_epochs, collab_based_on="local")
-        elif algo_name == "Fednova":
-            fednova_training(network, nb_of_synchronization=nb_epochs)
-        elif algo_name == "All-for-one-bin":
-            all_for_one_algo(network, nb_of_synchronization=nb_epochs, continuous=False)
-        elif algo_name == "All-for-one-cont":
-            all_for_one_algo(network, nb_of_synchronization=nb_epochs, continuous=True)
+            if algo_name == "FedAvg":
+                fedavg_training(network, nb_of_synchronization=nb_epochs)
+            elif algo_name == "All-for-all":
+                all_for_all_algo(network, nb_of_synchronization=nb_epochs, collab_based_on="ratio")
+            elif algo_name == "Local":
+                local_training(network, nb_of_synchronization=nb_epochs)
+            elif algo_name == "FedNova":
+                fednova_training(network, nb_of_synchronization=nb_epochs)
+            elif algo_name == "All-for-one-bin":
+                all_for_one_algo(network, nb_of_synchronization=nb_epochs, continuous=False)
+            elif algo_name == "All-for-one-cont":
+                all_for_one_algo(network, nb_of_synchronization=nb_epochs, continuous=True)
+            elif algo_name == "Cobo":
+                cobo_algo(network, nb_of_synchronization=nb_epochs)
+            elif algo_name == "Ditto":
+                ditto_algo(network, nb_of_synchronization=nb_epochs)
+            elif algo_name == "Wga-bc":
+                wga_bc_algo(network, nb_of_synchronization=nb_epochs)
+            elif algo_name == "Apfl":
+                apfl_algo(network, nb_of_synchronization=nb_epochs)
 
-        for client in network.clients:
-            writer = client.writer
+            for client in network.clients[:RUNNING_CLIENTS]:
+                writer = client.writer
 
-            train_epochs[algo_name].append(writer.retrieve_information("train_accuracy")[0])
-            train_accuracies[algo_name].append(writer.retrieve_information("train_accuracy")[1])
-            train_losses[algo_name].append(writer.retrieve_information("train_loss")[1])
+                train_epochs[algo_name][seed].append(writer.retrieve_information("train_accuracy")[0])
+                train_accuracies[algo_name][seed].append(writer.retrieve_information("train_accuracy")[1])
+                train_losses[algo_name][seed].append(writer.retrieve_information("train_loss")[1])
 
-            test_epochs[algo_name].append(writer.retrieve_information("test_accuracy")[0])
-            test_accuracies[algo_name].append(writer.retrieve_information("test_accuracy")[1])
-            test_losses[algo_name].append(writer.retrieve_information("test_loss")[1])
+                test_epochs[algo_name][seed].append(writer.retrieve_information("test_accuracy")[0])
+                test_accuracies[algo_name][seed].append(writer.retrieve_information("test_accuracy")[1])
+                test_losses[algo_name][seed].append(writer.retrieve_information("test_loss")[1])
 
-            weights[algo_name].append(writer.retrieve_histogram_information("weights")[1])
-            ratio[algo_name].append(writer.retrieve_histogram_information("ratio")[1])
+                weights[algo_name][seed].append(writer.retrieve_histogram_information("weights")[1])
+                ratio[algo_name][seed].append(writer.retrieve_histogram_information("ratio")[1])
 
-    plot_values(train_epochs, train_accuracies, all_algos, 'Train accuracy', dataset_name)
-    plot_values(train_epochs, train_losses, all_algos, 'log(Train loss)', dataset_name, log=True)
-    plot_values(test_epochs, test_accuracies, all_algos, 'Test accuracy', dataset_name)
-    plot_values(test_epochs, test_losses, all_algos, 'log(Test loss)', dataset_name, log=True)
+    plot_values(train_epochs, train_accuracies, all_algos, 'Train accuracy', dataset_name, inner_iterations,
+                batch_size_alignement)
+    plot_values(train_epochs, train_losses, all_algos, 'log(Train loss)', dataset_name, inner_iterations,
+                batch_size_alignement, log=True)
+    plot_values(test_epochs, test_accuracies, all_algos, 'Test accuracy', dataset_name, inner_iterations,
+                batch_size_alignement)
+    plot_values(test_epochs, test_losses, all_algos, 'log(Test loss)', dataset_name, inner_iterations,
+                batch_size_alignement, log=True)
 
     for algo_name in all_algos:
-        if algo_name in ["All-for-one-bin", "All-for-one-cont", "All-for-all"]:
-            plot_weights(weights[algo_name], dataset_name, algo_name)#, x_axis=test_accuracies[algo_name])
+        if algo_name in ["All-for-one-bin", "All-for-one-cont", "All-for-all", "Cobo"]:
+            plot_weights(weights[algo_name][all_seeds[0]], dataset_name, algo_name, inner_iterations,
+                batch_size_alignement)#, x_axis=test_accuracies[algo_name])
 
     if dataset_name in ["liquid_asset"]:
         X_raw_train, X_raw_test, numerical_transformer = load_liquid_dataset_test(get_path_to_datasets())
