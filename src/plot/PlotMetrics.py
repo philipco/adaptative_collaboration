@@ -17,9 +17,9 @@ def extract_number(chaine):
 
 if __name__ == '__main__':
 
-    dataset_name = "heart_disease"
-    inner_iterations = None
-    batch_size_alignement = 512
+    dataset_name = "ixi"
+    inner_iterations = 50
+    batch_size_alignement = 16
     folder = ""
 
     assert dataset_name in ["exam_llm", "mnist", "mnist_iid", "cifar10", "cifar10_iid", "heart_disease", "tcga_brca", "ixi", "liquid_asset",
@@ -28,7 +28,11 @@ if __name__ == '__main__':
 
     nb_initial_epochs = 0
 
-    all_algos = ["All-for-one-bin", "All-for-one-cont", "All-for-one-opt", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
+    if dataset_name in ["heart_disease", "ixi"]:
+        all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
+    else:
+        all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo",
+                     "Wga-bc", "Apfl"]
     all_seeds = [127, 496, 1729]  # Mersenne number, Perfect number, Ramanujan number
 
     def dict(all_algos, all_seeds):

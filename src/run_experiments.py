@@ -55,7 +55,11 @@ if __name__ == '__main__':
     if "synth" in dataset_name:
         torch.set_default_dtype(torch.float64)
 
-    all_algos = ["All-for-one-bin", "All-for-one-cont", "All-for-one-opt", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
+    if dataset_name in ["heart_disease", "ixi"]:
+        all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
+    else:
+        all_algos = ["All-for-one-bin", "All-for-one-cont", "All-for-one-opt", "Local", "FedAvg", "Ditto", "Cobo",
+                     "Wga-bc", "Apfl"]
     all_seeds = [127, 496, 1729] # Mersenne number, Perfect number, Ramanujan number
 
     def dict(all_algos, all_seeds):
@@ -124,7 +128,7 @@ if __name__ == '__main__':
     for algo_name in all_algos:
         if algo_name in ["All-for-one-bin", "All-for-one-opt", "All-for-one-cont", "All-for-all", "Cobo"]:
             plot_weights(weights[algo_name][all_seeds[0]], dataset_name, algo_name, inner_iterations,
-                batch_size_alignement)#, x_axis=test_accuracies[algo_name])
+                batch_size_alignement)
 
     if dataset_name in ["liquid_asset"]:
         X_raw_train, X_raw_test, numerical_transformer = load_liquid_dataset_test(get_path_to_datasets())
