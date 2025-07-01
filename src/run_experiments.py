@@ -55,7 +55,7 @@ if __name__ == '__main__':
     if "synth" in dataset_name:
         torch.set_default_dtype(torch.float64)
 
-    all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
+    all_algos = ["All-for-one-bin", "All-for-one-cont", "All-for-one-opt", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
     all_seeds = [127, 496, 1729] # Mersenne number, Perfect number, Ramanujan number
 
     def dict(all_algos, all_seeds):
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     
     for algo_name in all_algos:
 
-        assert algo_name in ["All-for-one-bin", "All-for-one-cont", "All-for-all", "Local", "FedAvg", "FedNova",
+        assert algo_name in ["All-for-one-bin", "All-for-one-cont", "All-for-one-opt", "Local", "FedAvg",
                              "Cobo", "Ditto", "Wga-bc", "Apfl"], "Algorithm not recognized."
         print(f"--- ================== ALGO: {algo_name} ================== ---")
 
@@ -77,6 +77,8 @@ if __name__ == '__main__':
 
             if algo_name == "FedAvg":
                 fedavg_training(network, nb_of_synchronization=nb_epochs)
+            if algo_name == "All-for-one-opt":
+                all_for_one_algo(network, nb_of_synchronization=nb_epochs, opt_weights=network.opt_weights)
             elif algo_name == "All-for-all":
                 all_for_all_algo(network, nb_of_synchronization=nb_epochs, collab_based_on="ratio")
             elif algo_name == "Local":
@@ -120,7 +122,7 @@ if __name__ == '__main__':
                 batch_size_alignement, log=True)
 
     for algo_name in all_algos:
-        if algo_name in ["All-for-one-bin", "All-for-one-cont", "All-for-all", "Cobo"]:
+        if algo_name in ["All-for-one-bin", "All-for-one-opt", "All-for-one-cont", "All-for-all", "Cobo"]:
             plot_weights(weights[algo_name][all_seeds[0]], dataset_name, algo_name, inner_iterations,
                 batch_size_alignement)#, x_axis=test_accuracies[algo_name])
 
