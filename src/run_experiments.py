@@ -31,14 +31,14 @@ if __name__ == '__main__':
         type=int,
         help="Number of inner iterations (if not provided, defaults is None leading to take the dataset's size).",
         required=False,
-        default=50,
+        default=None,
     )
     parser.add_argument(
         "--batch_size_alignement",
         type=int,
         help="Batch size for gradient alignement is weights computations.",
         required=False,
-        default=512
+        default=16
     )
     args = parser.parse_args()
     dataset_name = args.dataset_name
