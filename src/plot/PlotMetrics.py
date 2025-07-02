@@ -18,7 +18,7 @@ def extract_number(chaine):
 if __name__ == '__main__':
 
     dataset_name = "ixi"
-    inner_iterations = 50
+    inner_iterations = None
     batch_size_alignement = 16
     folder = ""
 
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     if dataset_name in ["heart_disease", "ixi"]:
         all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
     else:
-        all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo",
+        all_algos = ["All-for-one-bin", "All-for-one-cont", "All-for-one-opt", "Local", "FedAvg", "Ditto", "Cobo",
                      "Wga-bc", "Apfl"]
     all_seeds = [127, 496, 1729]  # Mersenne number, Perfect number, Ramanujan number
 
