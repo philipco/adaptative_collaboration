@@ -23,7 +23,7 @@ COLORS = ['tab:blue', 'tab:red', 'tab:orange', 'tab:brown', 'tab:green', 'tab:pu
           'tab:grey']
 
 MARKERS = ['o', 's', 'D', '^', 'v', '<', 'P', 'X']
-FONTSIZE = 20
+FONTSIZE = 26
 
 def plot_values(epochs, values, legends, metric_name: str, dataset_name: str, inner_iterations: int, batch_size_alignement: int,
                 folder = "", log=False):
@@ -46,7 +46,7 @@ def plot_values(epochs, values, legends, metric_name: str, dataset_name: str, in
     plt.xlabel("Number of epochs", fontsize=FONTSIZE)
     if dataset_name in ["heart_disease", "ixi"]:
         if "accuracy" in metric_name:
-            axins = zoomed_inset_axes(ax, 15 if dataset_name == "heart_disease" else 20, loc=4)
+            axins = zoomed_inset_axes(ax, 25 if dataset_name == "heart_disease" else 20, loc=4)
         else:
             axins = zoomed_inset_axes(ax, 50 if dataset_name == "heart_disease" else 10, loc=1)
 
@@ -81,14 +81,14 @@ def plot_values(epochs, values, legends, metric_name: str, dataset_name: str, in
             axins.plot(epochs_axis, avg_values, linestyle='-', color=COLORS_ALGO[algo_name], label=algo_name, linewidth=5)
             if "accuracy" in metric_name:
                 if dataset_name == "ixi":
-                    x1, x2, y1, y2 = epochs_axis[-1]-0.25, epochs_axis[-1], max_avg-0.003, max_avg+0.002
+                    x1, x2, y1, y2 = epochs_axis[-1]-0.3, epochs_axis[-1], max_avg-0.003, max_avg+0.002
                 elif dataset_name == "heart_disease":
-                    x1, x2, y1, y2 = epochs_axis[-1]-0.25, epochs_axis[-1], max_avg-0.01, max_avg+0.005
+                    x1, x2, y1, y2 = epochs_axis[-1]-0.3, epochs_axis[-1], max_avg-0.005, max_avg+0.002
             else:
                 if dataset_name == "ixi":
-                    x1, x2, y1, y2 = epochs_axis[-1] - 0.25, epochs_axis[-1], min_avg - 0.005, min_avg + 0.03
+                    x1, x2, y1, y2 = epochs_axis[-1] - 0.3, epochs_axis[-1], min_avg - 0.005, min_avg + 0.03
                 elif dataset_name == "heart_disease":
-                    x1, x2, y1, y2 = epochs_axis[-1] - 0.25, epochs_axis[-1], min_avg - 0.0005, min_avg + 0.001
+                    x1, x2, y1, y2 = epochs_axis[-1] - 0.3, epochs_axis[-1], min_avg - 0.0005, min_avg + 0.001
             axins.set_xlim(x1, x2)
             axins.set_ylim(y1, y2)
             axins.set_xticks([])
