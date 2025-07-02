@@ -107,7 +107,7 @@ class Network:
                 step_size = 1 / (2 * L)
             elif dataset_name == "synth_complex":
                 L = train_loaders[i].dataset.L
-                step_size = 1 / (4 * L)
+                step_size = 1 / (8 * L)
             self.clients.append(Client(
                 ID, f"{dataset_name}", algo_name, initial_seed, train_loaders[i], val_loaders[i],
                 test_loaders[i], net,
