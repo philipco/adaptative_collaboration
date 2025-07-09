@@ -1,3 +1,4 @@
+import argparse
 import glob
 import os
 
@@ -14,12 +15,38 @@ def extract_number(chaine):
     nombre = int(dernier_partie)
     return nombre
 
+def my_dict(all_algos, all_seeds):
+    return {algo: {s: [] for s in all_seeds} for algo in all_algos}
+
 
 if __name__ == '__main__':
 
-    dataset_name = "heart_disease"
-    inner_iterations = None
-    batch_size_alignement = 512
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--dataset_name",
+        type=str,
+        help="Name of the dataset.",
+        required=True,
+    )
+    parser.add_argument(
+        "--inner_iterations",
+        type=int,
+        help="Number of inner iterations (if not provided, defaults is None leading to take the dataset's size).",
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--batch_size_alignement",
+        type=int,
+        help="Batch size for gradient alignement is weights computations.",
+        required=False,
+        default=512
+    )
+    args = parser.parse_args()
+    dataset_name = args.dataset_name
+    inner_iterations = args.inner_iterations
+    batch_size_alignement = args.batch_size_alignement
+    folder = "final"
 
     assert dataset_name in ["exam_llm", "mnist", "mnist_iid", "cifar10", "cifar10_iid", "heart_disease", "tcga_brca", "ixi", "liquid_asset",
                             "synth", "synth_complex"], "Dataset not recognized."
@@ -27,18 +54,19 @@ if __name__ == '__main__':
 
     nb_initial_epochs = 0
 
-    all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
+    if dataset_name in ["heart_disease", "ixi"]:
+        all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
+    else:
+        all_algos = ["All-for-one-bin", "All-for-one-cont", "All-for-one-opt", "Local", "FedAvg", "Ditto", "Cobo",
+                     "Wga-bc", "Apfl"]
     all_seeds = [127, 496, 1729]  # Mersenne number, Perfect number, Ramanujan number
 
-    def dict(all_algos, all_seeds):
-        return {algo: {s: [] for s in all_seeds} for algo in all_algos}
-
-    train_epochs, train_losses, train_accuracies = dict(all_algos, all_seeds), dict(all_algos, all_seeds), dict(all_algos, all_seeds)
-    test_epochs, test_losses, test_accuracies = dict(all_algos, all_seeds), dict(all_algos, all_seeds), dict(all_algos, all_seeds)
-    weights, ratio = dict(all_algos, all_seeds), dict(all_algos, all_seeds)
+    train_epochs, train_losses, train_accuracies = my_dict(all_algos, all_seeds), my_dict(all_algos, all_seeds), my_dict(all_algos, all_seeds)
+    test_epochs, test_losses, test_accuracies = my_dict(all_algos, all_seeds), my_dict(all_algos, all_seeds), my_dict(all_algos, all_seeds)
+    weights, ratio = my_dict(all_algos, all_seeds), my_dict(all_algos, all_seeds)
 
     for algo_name in all_algos:
-        assert algo_name in ["All-for-one-bin", "All-for-one-cont", "All-for-all", "Local", "FedAvg", "FedNova",
+        assert algo_name in ["All-for-one-bin", "All-for-one-cont", "All-for-one-opt", "Local", "FedAvg",
                              "Ditto", "Cobo", "Wga-bc", "Apfl"], \
             "Algorithm not recognized."
         print(f"--- ================== ALGO: {algo_name} ================== ---")
@@ -46,7 +74,7 @@ if __name__ == '__main__':
         for seed in all_seeds:
 
             root = get_project_root()
-            pickle_folder = '{0}/pickle/{1}/{2}/{3}'.format(root, dataset_name, algo_name, seed)
+            pickle_folder = f'{root}/pickle/{folder}/{dataset_name}/{algo_name}/{seed}'
 
             # Use glob to find all files matching the pattern
             if dataset_name in ["mnist", "cifar10"]:
@@ -87,16 +115,16 @@ if __name__ == '__main__':
 
             if algo_name not in ["FedAvg", "FedNova", "Wga-bc", "Apfl"]:
                 plot_weights(weights[algo_name][all_seeds[0]], dataset_name, algo_name, inner_iterations,
-                             batch_size_alignement)#, x_axis=test_accuracies[algo_name])
+                             batch_size_alignement, folder=folder)#, x_axis=test_accuracies[algo_name])
 
     plot_values(train_epochs, train_accuracies, all_algos, 'Train accuracy', dataset_name, inner_iterations,
-                batch_size_alignement)
+                batch_size_alignement, folder=folder)
     plot_values(train_epochs, train_losses, all_algos, 'log(Train loss)', dataset_name, inner_iterations,
-                batch_size_alignement, log=True)
+                batch_size_alignement, folder=folder, log=True)
     plot_values(test_epochs, test_accuracies, all_algos, 'Test accuracy', dataset_name, inner_iterations,
-                batch_size_alignement)
+                batch_size_alignement, folder=folder)
     plot_values(test_epochs, test_losses, all_algos, 'log(Test loss)', dataset_name, inner_iterations,
-                batch_size_alignement, log=True)
+                batch_size_alignement, folder=folder, log=True)
 
 
 

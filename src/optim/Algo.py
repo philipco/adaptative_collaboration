@@ -419,7 +419,8 @@ def compute_weight_based_on_ratio(gradients, nb_points_by_clients, client_idx, n
     total_weight = sum(weight)
     return [w / total_weight for w in weight], numerators, denominators
 
-def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuous: bool = False, pruning: bool = False, keep_track=False):
+def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuous: bool = False, opt_weights = None,
+                     pruning: bool = False, keep_track=False):
     """
     Implementation of the "All-for-One" algorithm from our paper. .
 
@@ -465,39 +466,43 @@ def all_for_one_algo(network: Network, nb_of_synchronization: int = 5, continuou
         print(f"===============\tEpoch {synchronization_idx}\t===============")
         start_time = time.time()
 
-        weights = {_: None for _ in range(network.nb_clients)}
+        if opt_weights is None:
+            weights = {_: None for _ in range(network.nb_clients)}
 
-        # Compute personalized weights for each client based on gradient similarity.
+            # Compute personalized weights for each client based on gradient similarity.
+            for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
+                gradients_eval = {_: None for _ in range(network.nb_clients)}
+                client = network.clients[client_idx]
+
+                # Evaluate gradients of client's model on each other client's data.
+                for c_idx in range(network.nb_clients):
+                    c = network.clients[c_idx]
+
+                    early_stopping = 5
+                    if (client.last_epoch > early_stopping
+                            and sum([ratio(numerators[client_idx][c_idx][-k], denominators[client_idx][-k]) for k in range(1, early_stopping + 1)]) == 0):
+                        gradients_eval[c_idx] = None
+                    else:
+                        gradient_eval, iter_loaders_weights[client_idx][c_idx] = safe_gradient_computation(
+                            c.val_loader, iter_loaders_weights[client_idx][c_idx], c.device,
+                            client.trained_model, client.criterion, client.optimizer, client.scheduler
+                        )
+                        gradients_eval[c_idx] = gradient_eval
+
+                # Compute weights based on these evaluated gradients.
+                weight, numerators, denominators = compute_weight_based_on_ratio(
+                    gradients_eval, network.nb_testpoints_by_clients,
+                    client_idx, numerators, denominators, continuous=continuous
+                )
+
+                weights[client_idx] = weight
+        else:
+            weights = opt_weights
+
         for client_idx in range(len(network.clients[:RUNNING_CLIENTS])):
-            gradients_eval = {_: None for _ in range(network.nb_clients)}
-            client = network.clients[client_idx]
-
-            # Evaluate gradients of client's model on each other client's data.
-            for c_idx in range(network.nb_clients):
-                c = network.clients[c_idx]
-
-                early_stopping = 5
-                if (client.last_epoch > early_stopping
-                        and sum([ratio(numerators[client_idx][c_idx][-k], denominators[client_idx][-k]) for k in range(1, early_stopping + 1)]) == 0):
-                    gradients_eval[c_idx] = None
-                else:
-                    gradient_eval, iter_loaders_weights[client_idx][c_idx] = safe_gradient_computation(
-                        c.val_loader, iter_loaders_weights[client_idx][c_idx], c.device,
-                        client.trained_model, client.criterion, client.optimizer, client.scheduler
-                    )
-                    gradients_eval[c_idx] = gradient_eval
-
-            # Compute weights based on these evaluated gradients.
-            weight, numerators, denominators = compute_weight_based_on_ratio(
-                gradients_eval, network.nb_testpoints_by_clients,
-                client_idx, numerators, denominators, continuous=continuous
-            )
-
-            weights[client_idx] = weight
-
             # Log histogram of computed weights.
             network.clients[client_idx].writer.add_histogram(
-                'weights', np.array(weight),
+                'weights', np.array(weights[client_idx]),
                 network.clients[client_idx].last_epoch
             )
 

@@ -59,8 +59,16 @@ class Network:
         self.initial_seed = initial_seed
         self.inner_iterations = 1 if "synth" in dataset_name else inner_iterations
         self.batch_size_alignement = batch_size_alignement
-
         self.nb_clients = len(train_loaders)
+
+        # For the synthetic dataset or the synthetic split, we know th optimal clusters and therefore, we can run
+        # All-for-one using these optimal clusters.
+        if split_type == "cluster" or "synth" in dataset_name:
+            self.opt_weights = {i: [2 * int(j%2 == 0) / self.nb_clients if i%2==0 else 2 * int(j%2 != 0) / self.nb_clients for j in range(self.nb_clients)]
+                                for i in range(self.nb_clients)}
+        else:
+            self.opt_weights = None
+
         # The iterable dataset has no length (online setting, length is infinite).
         try:
             self.nb_testpoints_by_clients = [len(y.dataset) for y in train_loaders]

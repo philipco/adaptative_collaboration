@@ -79,7 +79,7 @@ for v in intra_var:
 axes.legend(loc="upper right",fontsize=FONTSIZE)
 
 axes.set_ylabel(r"$\mathcal{N}_1^\star(\varepsilon)$", fontsize=FONTSIZE)
-axes.set_xlabel(r"Precision $\log(\varepsilon)$", fontsize=FONTSIZE)
+axes.set_xlabel(r"Logarithm of the excess loss: $\log(\varepsilon)$", fontsize=FONTSIZE)
 axes.grid(True, linestyle='--', alpha=0.6)
 axes.set_xticklabels(axes.get_xticks(), fontsize=FONTSIZE)
 axes.set_yticklabels(axes.get_xticks(), fontsize=FONTSIZE)

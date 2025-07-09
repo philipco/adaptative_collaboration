@@ -1,7 +1,6 @@
 import torchvision
 import torch.nn as nn
 from torch.nn import MSELoss
-from torchvision import models
 from torchvision.transforms import transforms
 
 from src.optim.CustomLoss import DiceLoss, CoxLoss, L1WeightedAccuracyLoss
@@ -115,9 +114,9 @@ WEIGHT_DECAY = {"mnist": 5*10**-4,
                 "synth_complex": 0,
                 "exam_llm": 5*10**-4}
 BATCH_SIZE = {"mnist": 16,
-              "mnist_iid": 64,
+              "mnist_iid": 16,
               "cifar10": 16,
-              "cifar10_iid": 64,
+              "cifar10_iid": 16,
               "tcga_brca": 8,
               "heart_disease": 1,
               "ixi": 8,
@@ -138,10 +137,10 @@ MOMENTUM = {"mnist": 0.,
             "synth_iid": 0,
             "synth_complex":0,
             "exam_llm": 0.9}
-SCHEDULER_PARAMS = {"mnist": (200, 0.1),
-                    "mnist_iid": (10, 0.1),
+SCHEDULER_PARAMS = {"mnist": (80, 0.1),
+                    "mnist_iid": (100, 0.1),
                     "cifar10": (100, 0.1),
-                    "cifar10_iid": (10, 0.1),
+                    "cifar10_iid": (100, 0.1),
                     "tcga_brca": (50, 0.609),
                     "heart_disease": (5, 0.1),
                     "ixi": (10, 0.1),
@@ -150,18 +149,28 @@ SCHEDULER_PARAMS = {"mnist": (200, 0.1),
                     "synth_iid": (1, 1),
                     "synth_complex": (1, 1),
                     "exam_llm": (10, 0.1)}
-NB_EPOCHS = {"mnist": 20,
-             "mnist_iid": 50,
+NB_EPOCHS = {"mnist": 100,
+             "mnist_iid": 100,
              "cifar10": 100,
-             "cifar10_iid": 50,
+             "cifar10_iid": 100,
              "tcga_brca": 50,
-             "heart_disease": 20,
+             "heart_disease": 25,
              "ixi": 10,
              "liquid_asset": 50,
              "synth": 40,
              "synth_iid": 40,
              "synth_complex": 200,
              "exam_llm": 4}
+INNER_ITERATION = {"mnist": 50,
+            "cifar10": 50,
+            "heart_disease": None,
+            "ixi": None}
+BS_ALIGNEMENT = {"mnist": 512,
+            "cifar10": 512,
+            "heart_disease": 16,
+            "ixi": 16}
+
+
 
 SPLIT = {"mnist": "cluster", "cifar10": "cluster"}
 

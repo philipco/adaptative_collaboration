@@ -31,7 +31,7 @@ datasets.
   - ```utils```: Utility functions shared across modules.
   - ```run_experiments.py```: Entry point script to run experiments on a specified dataset.
 - ```test```: Unit tests for key PyTorch functions.
-
+- ```regenerate_pictures.sh```: Regenerate all figures based on pickles' file.
 ## Running experiments
 
 Run the following commands to generate the illustrative figures in the article.
@@ -51,9 +51,9 @@ Epoch index on the X-axis,  logarithm of the test loss on the Y-axis.
 **Left**: $d=2$. **Right**: $d=10$.
 
 <p float="left">
-  <img src="pictures_for_README/synth/log(Test loss)_b1_LRNone_m0.png" alt="Epoch index on X-axis, loss 
+  <img src="pictures_for_README/synth/logTest_loss_N20_b2_LRNone_s1_m0_inner1_bAl1.png" alt="Epoch index on X-axis, loss 
 on Y-axis, d=2" width="400"/>
-  <img src="pictures_for_README/synth_complex/log(Test loss)_b1_LRNone_m0.png" alt="Epoch index on X-axis, loss 
+  <img src="pictures_for_README/synth_complex/logTest_loss_N20_b2_LRNone_s1_m0_inner1_bAl1.png" alt="Epoch index on X-axis, loss 
 on Y-axis, d=10" width="400"/>
 </p>
 
@@ -69,10 +69,10 @@ Epoch index on the X-axis,  logarithm of the test loss on the Y-axis.
 **Left to right**: (a) mnist, (b) cifar10, (c) heart disease and (d) ixi.
 
 <p float="left">
-  <img src="pictures_for_README/mnist/log(Test loss)_b64_LR0.1_m0.0.png" alt="mnist" width="200"/>
-  <img src="pictures_for_README/cifar10/log(Test loss)_b64_LR0.1_m0.9.png" alt="cifar10" width="200"/>
-  <img src="pictures_for_README/heart_disease/log(Test loss)_b1_LR0.05_m0.png" alt="heart_disease" width="200"/>
-  <img src="pictures_for_README/ixi/log(Test loss)_b8_LR0.01_m0.9.png" alt="ixi" width="200"/>
+  <img src="pictures_for_README/mnist/logTest_loss_N20_b16_LR0.1_s80_m0.0_inner50_bAl512_cluster.png" alt="mnist" width="200"/>
+  <img src="pictures_for_README/cifar10/logTest_loss_N20_b16_LR0.001_s100_m0.9_inner50_bAl512_cluster.png" alt="cifar10" width="200"/>
+  <img src="pictures_for_README/heart_disease/logTest_loss_N4_b1_LR0.01_s5_m0_innerNone_bAl16.png" alt="heart_disease" width="200"/>
+  <img src="pictures_for_README/ixi/logTest_loss_N3_b8_LR0.01_s10_m0.9_innerNone_bAl16.png" alt="ixi" width="200"/>
 </p>
 
 
@@ -87,6 +87,10 @@ Epoch index on the X-axis,  logarithm of the test loss on the Y-axis.
 ### Table 2
 
 ```python3 -m src.BuildAccuracyLossTable```
+
+### Regenerate pictures from pickles' files.
+
+```sh regenerate_pictures.sh```
 
 ### Used dataset.
 
