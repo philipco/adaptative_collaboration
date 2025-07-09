@@ -58,9 +58,8 @@ if __name__ == '__main__':
     if dataset_name in ["heart_disease", "ixi"]:
         all_algos = ["All-for-one-bin", "All-for-one-cont", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
     else:
-        all_algos = ["All-for-one-bin", "All-for-one-opt", "Local", "FedAvg",
-                     "Apfl"]
-    all_seeds = [127] # Mersenne number, Perfect number, Ramanujan number
+        all_algos = ["All-for-one-bin", "All-for-one-cont", "All-for-one-opt", "Local", "FedAvg", "Ditto", "Cobo", "Wga-bc", "Apfl"]
+    all_seeds = [127, 496, 1729] # Mersenne number, Perfect number, Ramanujan number
 
     def dict(all_algos, all_seeds):
         return {algo: {s: [] for s in all_seeds} for algo in all_algos}
