@@ -1,3 +1,4 @@
+import argparse
 import glob
 import os
 
@@ -14,13 +15,38 @@ def extract_number(chaine):
     nombre = int(dernier_partie)
     return nombre
 
+def my_dict(all_algos, all_seeds):
+    return {algo: {s: [] for s in all_seeds} for algo in all_algos}
+
 
 if __name__ == '__main__':
 
-    dataset_name = "ixi"
-    inner_iterations = None
-    batch_size_alignement = 16
-    folder = ""
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--dataset_name",
+        type=str,
+        help="Name of the dataset.",
+        required=True,
+    )
+    parser.add_argument(
+        "--inner_iterations",
+        type=int,
+        help="Number of inner iterations (if not provided, defaults is None leading to take the dataset's size).",
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "--batch_size_alignement",
+        type=int,
+        help="Batch size for gradient alignement is weights computations.",
+        required=False,
+        default=512
+    )
+    args = parser.parse_args()
+    dataset_name = args.dataset_name
+    inner_iterations = args.inner_iterations
+    batch_size_alignement = args.batch_size_alignement
+    folder = "final"
 
     assert dataset_name in ["exam_llm", "mnist", "mnist_iid", "cifar10", "cifar10_iid", "heart_disease", "tcga_brca", "ixi", "liquid_asset",
                             "synth", "synth_complex"], "Dataset not recognized."
@@ -35,12 +61,9 @@ if __name__ == '__main__':
                      "Wga-bc", "Apfl"]
     all_seeds = [127, 496, 1729]  # Mersenne number, Perfect number, Ramanujan number
 
-    def dict(all_algos, all_seeds):
-        return {algo: {s: [] for s in all_seeds} for algo in all_algos}
-
-    train_epochs, train_losses, train_accuracies = dict(all_algos, all_seeds), dict(all_algos, all_seeds), dict(all_algos, all_seeds)
-    test_epochs, test_losses, test_accuracies = dict(all_algos, all_seeds), dict(all_algos, all_seeds), dict(all_algos, all_seeds)
-    weights, ratio = dict(all_algos, all_seeds), dict(all_algos, all_seeds)
+    train_epochs, train_losses, train_accuracies = my_dict(all_algos, all_seeds), my_dict(all_algos, all_seeds), my_dict(all_algos, all_seeds)
+    test_epochs, test_losses, test_accuracies = my_dict(all_algos, all_seeds), my_dict(all_algos, all_seeds), my_dict(all_algos, all_seeds)
+    weights, ratio = my_dict(all_algos, all_seeds), my_dict(all_algos, all_seeds)
 
     for algo_name in all_algos:
         assert algo_name in ["All-for-one-bin", "All-for-one-cont", "All-for-one-opt", "Local", "FedAvg",

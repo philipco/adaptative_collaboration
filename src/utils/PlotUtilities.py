@@ -115,6 +115,7 @@ def plot_values(epochs, values, legends, metric_name: str, dataset_name: str, in
     root = get_project_root()
     folder = f'{root}/pictures/{folder}/{dataset_name}'
     create_folder_if_not_existing(folder)
+    metric_name = metric_name.replace("(", "").replace(")", "").replace(" ", "_")
     if dataset_name in SPLIT.keys():
         ID = (f"{metric_name}_N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
               f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
@@ -122,7 +123,7 @@ def plot_values(epochs, values, legends, metric_name: str, dataset_name: str, in
     else:
         ID = (f"{metric_name}_N{NB_CLIENTS[dataset_name]}_b{BATCH_SIZE[dataset_name]}_LR{STEP_SIZE[dataset_name]}_"
               f"s{SCHEDULER_PARAMS[dataset_name][0]}_m{MOMENTUM[dataset_name]}_inner{inner_iterations}_"
-              f"bAl{batch_size_alignement}_")
+              f"bAl{batch_size_alignement}")
     plt.savefig(f"{folder}/{ID}.pdf", bbox_inches='tight', dpi=600)
 
     # Print final metric value (e.g., accuracy or log-loss) in LaTeX tabular format for paper inclusion

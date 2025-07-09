@@ -88,6 +88,10 @@ Epoch index on the X-axis,  logarithm of the test loss on the Y-axis.
 
 ```python3 -m src.BuildAccuracyLossTable```
 
+### Regenerate pictures from pickles' files.
+
+```sh regenerate_pictures.sh```
+
 ### Used dataset.
 
 We use four real datasets: mnist, cifar10, heart disease and ixi that should be stored at this location ```~../DATASETS```.
