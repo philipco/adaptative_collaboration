@@ -1,7 +1,6 @@
 import torchvision
 import torch.nn as nn
 from torch.nn import MSELoss
-from torchvision import models
 from torchvision.transforms import transforms
 
 from src.optim.CustomLoss import DiceLoss, CoxLoss, L1WeightedAccuracyLoss
@@ -138,7 +137,7 @@ MOMENTUM = {"mnist": 0.,
             "synth_iid": 0,
             "synth_complex":0,
             "exam_llm": 0.9}
-SCHEDULER_PARAMS = {"mnist": (100, 0.1),
+SCHEDULER_PARAMS = {"mnist": (80, 0.1),
                     "mnist_iid": (100, 0.1),
                     "cifar10": (100, 0.1),
                     "cifar10_iid": (100, 0.1),
@@ -162,6 +161,16 @@ NB_EPOCHS = {"mnist": 100,
              "synth_iid": 40,
              "synth_complex": 200,
              "exam_llm": 4}
+INNER_ITERATION = {"mnist": 50,
+            "cifar10": 50,
+            "heart_disease": None,
+            "ixi": None}
+BS_ALIGNEMENT = {"mnist": 512,
+            "cifar10": 512,
+            "heart_disease": 16,
+            "ixi": 16}
+
+
 
 SPLIT = {"mnist": "cluster", "cifar10": "cluster"}
 
